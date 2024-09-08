@@ -1,0 +1,6 @@
+.vs
+.git
+Voxel
+x64
+*.exe
+*.pdb
