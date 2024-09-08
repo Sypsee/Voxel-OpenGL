@@ -3,7 +3,6 @@
 #include "Window.h"
 #include "Camera.h"
 #include "Renderer.h"
-#include "../Game/GameObject.h"
 #include "../Game/Cube.h"
 
 #include <vector>

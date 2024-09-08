@@ -2,6 +2,9 @@
 
 Cube::Cube()
 {
+	m_Shader.AttachShader({"res/shaders/cube.frag", GL_FRAGMENT_SHADER});
+	m_Shader.AttachShader({"res/shaders/cube.vert", GL_VERTEX_SHADER});
+
 	glGenVertexArrays(1, &m_VAO);
 	glBindVertexArray(m_VAO);
 
@@ -30,4 +33,6 @@ void Cube::Draw()
 	glBindVertexArray(m_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
+
+	m_Shader.UnBind();
 }

@@ -2,7 +2,7 @@
 
 #include <glad/glad.h>
 
-Camera cam{};	// IDK but its global
+Camera cam{};	// Global for a reason
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
@@ -70,8 +70,8 @@ Application::Application()
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(message_callback, nullptr);
 
-	Cube cube{};
-	cubes.push_back(cube);
+	cubes.emplace_back();
+	cubes[0].transform.model = glm::translate(cubes[0].transform.model, glm::vec3(0, 0, 0));
 }
 
 Application::~Application()
@@ -89,7 +89,7 @@ void Application::run()
 
 		cam.update(m_Window.getGLFWwindow());
 
-		for (Cube cube : cubes)
+		for (Cube &cube : cubes)
 		{
 			cube.transform.proj = cam.getProjMatrix();
 			cube.transform.view = cam.getProjMatrix();

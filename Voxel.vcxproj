@@ -160,7 +160,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\OpenGL\Shader.cpp" />
     <ClCompile Include="src\OpenGL\Texture.cpp" />
-    <ClCompile Include="src\OpenGL\VertexBuffer.cpp" />
+    <ClCompile Include="src\OpenGL\Buffer.cpp" />
     <ClCompile Include="src\stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -169,10 +169,9 @@
     <ClInclude Include="src\Core\Renderer.h" />
     <ClInclude Include="src\Core\Window.h" />
     <ClInclude Include="src\Game\Cube.h" />
-    <ClInclude Include="src\Game\GameObject.h" />
     <ClInclude Include="src\OpenGL\Shader.h" />
     <ClInclude Include="src\OpenGL\Texture.h" />
-    <ClInclude Include="src\OpenGL\VertexBuffer.h" />
+    <ClInclude Include="src\OpenGL\Buffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
