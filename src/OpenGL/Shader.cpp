@@ -16,7 +16,7 @@ void CheckCompileError(unsigned int shader, const char* shaderType)
 		std::vector<char> errorLog(maxLength);
 		glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
 
-        std::cout << shaderType << " COMPILATION ERROR : " << std::endl;
+        std::cout << shaderType << " : COMPILATION ERROR : " << std::endl;
 
         for (char log : errorLog)
         {
@@ -57,7 +57,7 @@ void Shader::AttachShader(AttachInfo const& attachInfo) const
 	}
 	catch (std::ifstream::failure e)
 	{
-		std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+		std::cout << "Failed to read shader file!" << std::endl;
 	}
 	const char* shaderCodeChar = shaderCode.c_str();
 
@@ -65,7 +65,7 @@ void Shader::AttachShader(AttachInfo const& attachInfo) const
 	glShaderSource(shader, 1, &shaderCodeChar, NULL);
 	glCompileShader(shader);
 
-	CheckCompileError(shader, "Shader : ");
+	CheckCompileError(shader, attachInfo.shaderPath);
 
 	glAttachShader(m_ProgramID, shader);
 	glLinkProgram(m_ProgramID);
@@ -105,6 +105,12 @@ void Shader::setVec3(const char* u_name, glm::vec3 val)
 {
     glUseProgram(m_ProgramID);
     glUniform3fv(GetUniformLocation(u_name), 1, glm::value_ptr(val));
+}
+
+void Shader::setVec2(const char* u_name, glm::vec2 val)
+{
+	glUseProgram(m_ProgramID);
+	glUniform2fv(GetUniformLocation(u_name), 1, glm::value_ptr(val));
 }
 
 void Shader::setMat4(const char* u_name, glm::mat4 val)

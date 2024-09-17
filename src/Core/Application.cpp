@@ -2,7 +2,7 @@
 
 #include <glad/glad.h>
 
-Camera cam{};	// Global for a reason
+Camera cam{glm::vec3(0, CHUNK_SIZE + 1, 0)};	// Global for a reason
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
@@ -67,36 +67,57 @@ Application::Application()
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(message_callback, nullptr);
+	glEnable(GL_BLEND);
+	/*glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);*/
+	/*glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(message_callback, nullptr);*/
 
-	cubes.emplace_back();
-	cubes[0].transform.model = glm::translate(cubes[0].transform.model, glm::vec3(0, 0, 0));
+	world = new World();
+	//cloud = new Cloud();
 }
 
 Application::~Application()
 {
+	delete world;
+	delete cloud;
 }
 
 void Application::run()
 {
+	float currentFrame = 0;
+	float lastFrame = 0;
+	float dt = 0;
+
 	while (!m_Window.shouldClose())
 	{
 		glfwPollEvents();
 
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if (glfwGetKey(m_Window.getGLFWwindow(), GLFW_KEY_O) == GLFW_PRESS)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
+		else if (glfwGetKey(m_Window.getGLFWwindow(), GLFW_KEY_P) == GLFW_PRESS)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+
+		currentFrame = glfwGetTime();
+		dt = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		//system("cls");
+		//std::cout << dt*1000 << "ms\n";
 
 		cam.update(m_Window.getGLFWwindow());
+		world->Draw(cam);
 
-		for (Cube &cube : cubes)
-		{
-			cube.transform.proj = cam.getProjMatrix();
-			cube.transform.view = cam.getProjMatrix();
-			cube.Draw();
-		}
-		
-		//renderer.Draw(cubes);
+		/*cloud->transform.proj = cam.getProjMatrix();
+		cloud->transform.view = cam.getViewMatrix();
+		cloud->Draw(cam.getPosition());*/
 
 		glfwSwapBuffers(m_Window.getGLFWwindow());
 	}

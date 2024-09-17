@@ -7,12 +7,13 @@
 class Camera
 {
 public:
-	Camera(glm::vec3 camPos=glm::vec3(0.f,0.f,3.f), float FOV = 50.f, float nearClip = 0.1f, float farClip = 100.f);
+	Camera(glm::vec3 camPos=glm::vec3(0.f,0.f,3.f), float FOV = 50.f, float nearClip = 0.1f, float farClip = 1000.f);
 
 	void update(GLFWwindow* window);
 	void mouse_callback(double xpos, double ypos);
 
 	void setAspectRatio(float aspect_ratio);
+	void setPosition(glm::vec3 pos);
 
 	glm::vec3 getPosition() const;
 	glm::mat4 getProjMatrix() const;

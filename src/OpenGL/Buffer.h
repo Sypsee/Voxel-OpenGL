@@ -26,10 +26,12 @@ public:
 	inline Buffer(Buffer&& other) noexcept { *this = std::move(other); }
 	~Buffer() noexcept;
 
+	void uploadData(const void* data, size_t size);
 	void Bind() const;
 	void UnBind() const;
 
 private:
 	unsigned int m_BufferID = 0;
 	GLenum m_Target = 0;
+	GLenum m_Usage = 0;
 };

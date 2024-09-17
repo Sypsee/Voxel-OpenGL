@@ -3,9 +3,11 @@
 #include "Window.h"
 #include "Camera.h"
 #include "Renderer.h"
-#include "../Game/Cube.h"
+#include "../Game/World.h"
+#include "../Game/Clouds.h"
 
-#include <vector>
+#include <unordered_map>
+#include <array>
 
 class Application
 {
@@ -24,5 +26,6 @@ public:
 private:
 	Window m_Window{ "Voxel Engine", START_WIDTH, START_HEIGHT };
 	Renderer renderer{};
-	std::vector<Cube> cubes;
+	World *world;
+	Cloud* cloud;
 };

@@ -29,7 +29,12 @@ void Camera::update(GLFWwindow *window)
 
 void Camera::process_inputs(GLFWwindow* window)
 {
-	float cameraSpeed = 5.f * deltaTime;
+	float cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		cameraSpeed = 15.f * deltaTime;
+	else
+		cameraSpeed = 5.f * deltaTime;
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		cameraPos += cameraSpeed * cameraFront;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -84,6 +89,11 @@ void Camera::mouse_callback(double xpos, double ypos)
 void Camera::setAspectRatio(float aspect_ratio)
 {
 	proj = glm::perspective(glm::radians(FOV), aspect_ratio, nearClip, farClip);
+}
+
+void Camera::setPosition(glm::vec3 pos)
+{
+	cameraPos = pos;
 }
 
 glm::vec3 Camera::getPosition() const

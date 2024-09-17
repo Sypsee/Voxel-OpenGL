@@ -3,7 +3,7 @@
 #include <iostream>
 
 Buffer::Buffer(CreateInfo const& createInfo)
-	:m_Target(createInfo.target)
+	:m_Target(createInfo.target), m_Usage(createInfo.usage)
 {
 	glGenBuffers(1, &m_BufferID);
 	glBindBuffer(createInfo.target, m_BufferID);
@@ -13,6 +13,12 @@ Buffer::Buffer(CreateInfo const& createInfo)
 Buffer::~Buffer() noexcept
 {
 	glDeleteBuffers(1, &m_BufferID);
+}
+
+void Buffer::uploadData(const void* data, size_t size)
+{
+	Bind();
+	glBufferData(m_Target, size, data, m_Usage);
 }
 
 void Buffer::Bind() const

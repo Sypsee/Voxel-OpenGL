@@ -40,6 +40,7 @@ public:
 	void setF(const char* u_name, float v1);
 	void setI(const char* u_name, float v1);
 	void setVec3(const char* u_name, glm::vec3 val);
+	void setVec2(const char* u_name, glm::vec2 val);
 	void setMat4(const char* u_name, glm::mat4 val);
 
 private:

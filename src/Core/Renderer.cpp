@@ -8,10 +8,6 @@ Renderer::~Renderer()
 {
 }
 
-void Renderer::Draw(std::vector<Cube> &cubes)
+void Renderer::Draw()
 {
-	for (auto &obj : cubes)
-	{
-		obj.Draw();
-	}
 }
