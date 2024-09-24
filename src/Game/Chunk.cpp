@@ -35,7 +35,7 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
 			float noiseY = (position.y + static_cast<float>(z));
-			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 0.5f;
+			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 1;
 
 			int32_t height = FloatToIntNoise(noiseValue);
 			for (int32_t y = 0; y < height; y++)
@@ -52,7 +52,7 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
 			float noiseY = (position.y + static_cast<float>(z));
-			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 0.5f;
+			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 1;
 
 			int32_t height = FloatToIntNoise(noiseValue);
 			for (int32_t y = 0; y < height; y++)
@@ -65,8 +65,8 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 
 	glBindVertexArray(m_VAO);
 
-	m_IBO.uploadData(&m_Indices[0], m_Indices.size() * sizeof(unsigned int));
-	m_VBO.uploadData(&m_Vertices[0], m_Vertices.size() * sizeof(float));
+	//m_IBO.UploadData(&m_Indices[0], m_Indices.size() * sizeof(unsigned int));
+	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(float));
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -76,12 +76,7 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 
 Chunk::~Chunk()
 {
-	if (m_ChunkThread.joinable())
-		m_ChunkThread.join();
-
-	m_Vertices.clear();
-	m_Indices.clear();
-	glDeleteVertexArrays(1, &m_VAO);
+	CleanChunk();
 }
 
 void Chunk::CleanChunk()
@@ -92,6 +87,11 @@ void Chunk::CleanChunk()
 	m_Blocks.fill(0);
 	m_Vertices.clear();
 	m_Indices.clear();
+	m_Noise = NULL;
+
+	glDeleteVertexArrays(1, &m_VAO);
+	m_Shader.DestroyShader();
+	//m_VBO.DestroyBuffer();
 
 	isCleaned = true;
 	isChunkLoaded = false;
@@ -119,7 +119,7 @@ void Chunk::BuildChunk()
 			int32_t height = FloatToIntNoise(noiseValue);
 			for (int32_t y = 0; y < height; y++)
 			{
-				if (OutOfBounds(x) || OutOfBounds(z) || OutOfBounds(y, CHUNK_HEIGHT)) break;
+				if (OutOfBounds(x, y, z)) break;
 				m_Blocks[GetBlockIndex(x, y, z)] = true;
 			}
 		}
@@ -136,7 +136,7 @@ void Chunk::BuildChunk()
 			int32_t height = FloatToIntNoise(noiseValue);
 			for (int32_t y = 0; y < height; y++)
 			{
-				if (OutOfBounds(x) || OutOfBounds(z) || OutOfBounds(y, CHUNK_HEIGHT)) break;
+				if (OutOfBounds(x, y, z)) break;
 				AddBlock(x, y, z);
 			}
 		}
@@ -144,13 +144,14 @@ void Chunk::BuildChunk()
 
 	glBindVertexArray(m_VAO);
 
-	m_IBO.uploadData(&m_Indices[0], m_Indices.size() * sizeof(unsigned int));
-	m_VBO.uploadData(&m_Vertices[0], m_Vertices.size() * sizeof(float));
+	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uv)));
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 1, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
+	glEnableVertexAttribArray(2);
 
 	isChunkLoaded = true;
 	isCleaned = false;
@@ -179,51 +180,142 @@ bool Chunk::OutOfBounds(const int value, const int max)
 
 void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 {
-	/*if (m_Blocks[GetBlockIndex(x, y, z - 1)]
-		&& m_Blocks[GetBlockIndex(x, y, z + 1)]
-		&& m_Blocks[GetBlockIndex(x + 1, y, z)]
-		&& m_Blocks[GetBlockIndex(x - 1, y, z)]
-		&& m_Blocks[GetBlockIndex(x, y + 1, z)]
-		&& m_Blocks[GetBlockIndex(x, y - 1, z)])
-	{
-		return;
-	}*/
+	std::array<Vertex, 4> frontFace = {
+		Vertex{
+			glm::i8vec3(-1, -1, -1),
+			glm::u8vec2(0, 0),
+			0
+		},
+		Vertex{
+			glm::i8vec3(1, -1, -1),
+			glm::u8vec2(1, 0),
+			0
+		},
+		Vertex{
+			glm::i8vec3(1, 1, -1),
+			glm::u8vec2(1, 1),
+			0
+		},
+		Vertex{
+			glm::i8vec3(-1, 1, -1),
+			glm::u8vec2(0, 1),
+			0
+		},
+	};
 
-	std::array<float, 20> frontFace = {
-		-0.5f, -0.5f, -0.5f,	0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f,		1.0f, 0.0f,
-		0.5f,  0.5f, -0.5f,		1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,	0.0f, 1.0f
+	std::array<Vertex, 4> backFace = {
+		Vertex{
+			glm::i8vec3(-1, -1,  1),
+			glm::u8vec2(0, 0),
+			1
+		},
+		Vertex{
+			glm::i8vec3(1, -1, 1),
+			glm::u8vec2(1, 0),
+			1
+		},
+		Vertex{
+			glm::i8vec3(1, 1, 1),
+			glm::u8vec2(1, 1),
+			1
+		},
+		Vertex{
+			glm::i8vec3(-1, 1, 1),
+			glm::u8vec2(0, 1),
+			1
+		},
 	};
-	std::array<float, 20> backFace = {
-		-0.5f, -0.5f,  0.5f,	0.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,		1.0f, 0.0f,
-		0.5f,  0.5f,  0.5f,		1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,	0.0f, 1.0f
+
+	std::array<Vertex, 4> leftFace = {
+		Vertex{
+			glm::i8vec3(-1,  1,  1),
+			glm::u8vec2(0, 1),
+			2
+		},
+		Vertex{
+			glm::i8vec3(-1, 1, -1),
+			glm::u8vec2(0, 1),
+			2
+		},
+		Vertex{
+			glm::i8vec3(-1, -1, -1),
+			glm::u8vec2(0, 0),
+			2
+		},
+		Vertex{
+			glm::i8vec3(-1, -1, 1),
+			glm::u8vec2(0, 0),
+			2
+		},
 	};
-	std::array<float, 20> leftFace = {
-		-0.5f,  0.5f,  0.5f,	0.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,	0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,	0.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,	0.0f, 0.0f
+
+	std::array<Vertex, 4> rightFace = {
+		Vertex{
+			glm::i8vec3(1,  1,  1),
+			glm::u8vec2(1, 1),
+			3
+		},
+		Vertex{
+			glm::i8vec3(1, 1, -1),
+			glm::u8vec2(1, 1),
+			3
+		},
+		Vertex{
+			glm::i8vec3(1, -1, -1),
+			glm::u8vec2(1, 0),
+			3
+		},
+		Vertex{
+			glm::i8vec3(1, -1, 1),
+			glm::u8vec2(1, 0),
+			3
+		},
 	};
-	std::array<float, 20> rightFace = {
-		0.5f,  0.5f,  0.5f,		1.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,		1.0f, 1.0f,
-		0.5f, -0.5f, -0.5f,		1.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,		1.0f, 0.0f
+
+	std::array<Vertex, 4> bottomFace = {
+		Vertex{
+			glm::i8vec3(-1,  -1,  -1),
+			glm::u8vec2(0, 0),
+			4
+		},
+		Vertex{
+			glm::i8vec3(1, -1, -1),
+			glm::u8vec2(1, 0),
+			4
+		},
+		Vertex{
+			glm::i8vec3(1, -1, 1),
+			glm::u8vec2(1, 0),
+			4
+		},
+		Vertex{
+			glm::i8vec3(-1, -1, 1),
+			glm::u8vec2(0, 0),
+			4
+		},
 	};
-	std::array<float, 20> bottomFace = {
-		-0.5f, -0.5f, -0.5f,	0.0f, 0.0f,
-		0.5f, -0.5f, -0.5f,		1.0f, 0.0f,
-		0.5f, -0.5f,  0.5f,		1.0f, 0.0f
-		-0.5f, -0.5f,  0.5f,	0.0f, 0.0f
-	};
-	std::array<float, 20> topFace = {
-		-0.5f,  0.5f, -0.5f,	0.0f, 1.0f,
-		0.5f,  0.5f, -0.5f,		1.0f, 1.0f,
-		0.5f,  0.5f,  0.5f,		1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,	0.0f, 1.0f,
+
+	std::array<Vertex, 4> topFace = {
+		Vertex{
+			glm::i8vec3(-1,  1,  -1),
+			glm::u8vec2(0, 1),
+			5
+		},
+		Vertex{
+			glm::i8vec3(1, 1, -1),
+			glm::u8vec2(1, 1),
+			5
+		},
+		Vertex{
+			glm::i8vec3(1, 1, 1),
+			glm::u8vec2(1, 1),
+			5
+		},
+		Vertex{
+			glm::i8vec3(-1, 1, 1),
+			glm::u8vec2(0, 1),
+			5
+		},
 	};
 
 	glm::ivec3 facePos = { x,y,z };
@@ -236,7 +328,7 @@ void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 	TryAddFace(topFace, facePos, { x, y + 1, z});
 }
 
-void Chunk::TryAddFace(const std::array<float, 20>& blockFace, const glm::ivec3& facePos, const glm::ivec3& adjacentBlock)
+void Chunk::TryAddFace(const std::array<Vertex, 4>& blockFace, const glm::ivec3& facePos, const glm::ivec3& adjacentBlock)
 {
 	if (OutOfBounds(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z))
 	{
@@ -248,25 +340,22 @@ void Chunk::TryAddFace(const std::array<float, 20>& blockFace, const glm::ivec3&
 	}
 }
 
-void Chunk::AddFace(const std::array<float, 20> &blockFace, const glm::ivec3 &facePos)
+void Chunk::AddFace(const std::array<Vertex, 4> &blockFace, const glm::ivec3 &facePos)
 {
-	int nbElementPerLayout = 5;
-	int countVertices = m_Vertices.size() / nbElementPerLayout;
-	for (int i = 0; i < blockFace.size(); i+=5)
+	for (Vertex vert : blockFace)
 	{
-		m_Vertices.push_back(facePos.x + blockFace[i]);
-		m_Vertices.push_back(facePos.y + blockFace[i+1]);
-		m_Vertices.push_back(facePos.z + blockFace[i+2]);
-		m_Vertices.push_back(blockFace[i + 3]);	// UV
-		m_Vertices.push_back(blockFace[i + 4]);	// UV
+		m_Vertices.push_back(
+			Vertex{
+				{
+					(static_cast<int8_t>(facePos.x) + vert.position.x),
+					(static_cast<int8_t>(facePos.y) + vert.position.y),
+					(static_cast<int8_t>(facePos.z) + vert.position.z),
+				},
+				vert.uv,
+				vert.normalIndex
+			}
+		);
 	}
-
-	m_Indices.push_back(countVertices);
-	m_Indices.push_back(countVertices + 1);
-	m_Indices.push_back(countVertices + 2);
-	m_Indices.push_back(countVertices + 2);
-	m_Indices.push_back(countVertices + 3);
-	m_Indices.push_back(countVertices);
 }
 
 void Chunk::Draw()
@@ -275,13 +364,10 @@ void Chunk::Draw()
 	m_Shader.setMat4("model", transform.model);
 	m_Shader.setMat4("view", transform.view);
 	m_Shader.setMat4("proj", transform.proj);
-
-	//std::cout << transform.position.x << "\n";
+	m_Shader.setVec3("viewPos", transform.camPos);
 
 	glBindVertexArray(m_VAO);
-	m_IBO.Bind();
-	glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
-	m_IBO.UnBind();
+	glDrawArrays(GL_TRIANGLES, 0, m_Vertices.size());
 	glBindVertexArray(0);
 
 	m_Shader.UnBind();

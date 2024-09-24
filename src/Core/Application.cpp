@@ -74,7 +74,7 @@ Application::Application()
 	glDebugMessageCallback(message_callback, nullptr);*/
 
 	world = new World();
-	cam.setPosition({ 100, 50, 100 });
+	cam.setPosition({ 0, 50, 0 });
 	//cloud = new Cloud();
 }
 
@@ -94,7 +94,7 @@ void Application::run()
 	{
 		glfwPollEvents();
 
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClearColor(0.53f, 0.81f, 1.f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (glfwGetKey(m_Window.getGLFWwindow(), GLFW_KEY_O) == GLFW_PRESS)

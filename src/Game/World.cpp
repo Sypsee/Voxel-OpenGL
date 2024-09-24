@@ -42,6 +42,7 @@ void World::Draw(const Camera& cam)
 		{
 			chunk.second.transform.proj = cam.getProjMatrix();
 			chunk.second.transform.view = cam.getViewMatrix();
+			chunk.second.transform.camPos = cam.getPosition();
 			chunk.second.Draw();
 		}
 

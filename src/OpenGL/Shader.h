@@ -32,6 +32,7 @@ public:
 	~Shader() noexcept;
 	
 	void AttachShader(AttachInfo const& attachInfo) const;
+	void DestroyShader();
 
 	void Bind() const;
 	void UnBind() const;

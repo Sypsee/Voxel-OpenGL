@@ -38,7 +38,7 @@ Shader::Shader()
 
 Shader::~Shader() noexcept
 {
-    glDeleteProgram(m_ProgramID);
+	DestroyShader();
 }
 
 void Shader::AttachShader(AttachInfo const& attachInfo) const
@@ -71,6 +71,11 @@ void Shader::AttachShader(AttachInfo const& attachInfo) const
 	glLinkProgram(m_ProgramID);
 
 	glDeleteShader(shader);
+}
+
+void Shader::DestroyShader()
+{
+	glDeleteProgram(m_ProgramID);
 }
 
 void Shader::Bind() const

@@ -16,6 +16,13 @@
 #define CHUNK_SIZE 16
 #define CHUNK_HEIGHT 256
 
+struct Vertex
+{
+	glm::i8vec3 position;
+	glm::u8vec2 uv;
+	uint8_t normalIndex;
+};
+
 class Chunk
 {
 public:
@@ -32,8 +39,8 @@ public:
 	bool OutOfBounds(const int value, const int max = CHUNK_SIZE);
 
 	void AddBlock(const int32_t x, const int y, const int32_t z);
-	void TryAddFace(const std::array<float, 20> &blockFace, const glm::ivec3 &facePos, const glm::ivec3 &adjacentBlock);
-	void AddFace(const std::array<float, 20> &blockFace, const glm::ivec3 &facePos);
+	void TryAddFace(const std::array<Vertex, 4> &blockFace, const glm::ivec3 &facePos, const glm::ivec3 &adjacentBlock);
+	void AddFace(const std::array<Vertex, 4> &blockFace, const glm::ivec3 &facePos);
 	
 	void Draw();
 
@@ -43,14 +50,13 @@ public:
 
 private:
 	std::array<bool, CHUNK_SIZE*CHUNK_HEIGHT*CHUNK_SIZE> m_Blocks;
-	std::vector<float> m_Vertices;
+	std::vector<Vertex> m_Vertices;
 	std::vector<unsigned int> m_Indices;
 	std::vector<int32_t> xCoord;	// For thread
 
 	FastNoiseLite m_Noise;
 	Shader m_Shader;
-	Buffer m_VBO{ {GL_ARRAY_BUFFER, NULL, m_Vertices.size() * sizeof(float), GL_DYNAMIC_DRAW} };
-	Buffer m_IBO{ {GL_ELEMENT_ARRAY_BUFFER, NULL, m_Indices.size() * sizeof(unsigned int), GL_DYNAMIC_DRAW} };
+	Buffer m_VBO{ {GL_ARRAY_BUFFER, NULL, m_Vertices.size() * sizeof(uint8_t), GL_DYNAMIC_DRAW} };
 	Texture m_GrassTex{"res/textures/grass.jpg"};
 	unsigned int m_VAO;
 

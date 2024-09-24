@@ -26,7 +26,8 @@ public:
 	inline Buffer(Buffer&& other) noexcept { *this = std::move(other); }
 	~Buffer() noexcept;
 
-	void uploadData(const void* data, size_t size);
+	void UploadData(const void* data, size_t size);
+	void DestroyBuffer();
 	void Bind() const;
 	void UnBind() const;
 

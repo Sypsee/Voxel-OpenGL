@@ -12,13 +12,18 @@ Buffer::Buffer(CreateInfo const& createInfo)
 
 Buffer::~Buffer() noexcept
 {
-	glDeleteBuffers(1, &m_BufferID);
+	DestroyBuffer();
 }
 
-void Buffer::uploadData(const void* data, size_t size)
+void Buffer::UploadData(const void* data, size_t size)
 {
 	Bind();
 	glBufferData(m_Target, size, data, m_Usage);
+}
+
+void Buffer::DestroyBuffer()
+{
+	glDeleteBuffers(1, &m_BufferID);
 }
 
 void Buffer::Bind() const

@@ -25,6 +25,6 @@ private:
 	int seed = rand();
 
 	const int16_t chunkDiameter = 1;
-	const int8_t m_RenderDistance = 12;
+	const int8_t m_RenderDistance = 4;
 	int8_t m_LoadDistance = 2;
 };
