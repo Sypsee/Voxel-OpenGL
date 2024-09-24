@@ -5,7 +5,7 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/hash.hpp"
-#include <FastNoise/FastNoise.h>
+#include <FastNoise/FastNoiseLite.h>
 
 #include <unordered_map>
 
@@ -20,10 +20,11 @@ public:
 
 private:
 	std::unordered_map<glm::ivec2, Chunk> chunks;
-	
-	std::array<float, CHUNK_SIZE*CHUNK_SIZE> noiseOutput;
+
+	FastNoiseLite noise;
 	int seed = rand();
 
-	const int16_t chunkDiameter = 50;
-	const int8_t m_RenderDistance = 4;
+	const int16_t chunkDiameter = 1;
+	const int8_t m_RenderDistance = 12;
+	int8_t m_LoadDistance = 2;
 };

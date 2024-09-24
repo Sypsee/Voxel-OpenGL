@@ -74,6 +74,7 @@ Application::Application()
 	glDebugMessageCallback(message_callback, nullptr);*/
 
 	world = new World();
+	cam.setPosition({ 100, 50, 100 });
 	//cloud = new Cloud();
 }
 

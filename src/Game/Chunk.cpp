@@ -1,47 +1,63 @@
 #include "Chunk.h"
 
-int FloatToIntNoise(float val)
+int32_t FloatToIntNoise(float val)
 {
-	if (val >= 1) val = 0.999f;
-	return 10 + val * 10;
+	return static_cast<int32_t>(((val + 1) / 2) * 40);
 }
 
-Chunk::Chunk(glm::ivec2 position, const std::array<float, CHUNK_SIZE*CHUNK_SIZE> &noiseOutput)
+Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 	:m_Blocks{0}
 {
+	this->m_Noise = noise;
+	transform.position = { position.x, 0, position.y };
 	transform.model = glm::translate(transform.model, glm::vec3(position.x, 0, position.y));
 
 	m_Shader.AttachShader({ "res/shaders/cube.frag", GL_FRAGMENT_SHADER });
 	m_Shader.AttachShader({ "res/shaders/cube.vert", GL_VERTEX_SHADER });
 
-	grassTex.Bind();
+	m_GrassTex.Bind();
 	m_Shader.setI("tex", 0);
+
+	xCoord.reserve(CHUNK_SIZE);
+
+	for (int x = 0; x < CHUNK_SIZE; x++)
+	{
+		xCoord.push_back(x);
+	}
 
 	glGenVertexArrays(1, &m_VAO);
 
-	int index = 0;
-	for (int8_t x = 0; x < CHUNK_SIZE; x++)
+	if (!shouldBuild) return;
+
+	for (int32_t x = 0; x < CHUNK_SIZE; x++)
 	{
-		for (int8_t z = 0; z < CHUNK_SIZE; z++)
+		float noiseX = (position.x + static_cast<float>(x));
+		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
-			int height = FloatToIntNoise(noiseOutput[index++]);
-			for (int y = 0; y < height; y++)
+			float noiseY = (position.y + static_cast<float>(z));
+			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 0.5f;
+
+			int32_t height = FloatToIntNoise(noiseValue);
+			for (int32_t y = 0; y < height; y++)
 			{
-				if (OutOfBounds(x, y, z)) return;
+				if (OutOfBounds(x, y, z)) break;
 				m_Blocks[GetBlockIndex(x, y, z)] = true;
 			}
 		}
 	}
 
-	index = 0;
-	for (int8_t x = 0; x < CHUNK_SIZE; x++)
+	for (int32_t x = 0; x < CHUNK_SIZE; x++)
 	{
-		for (int8_t z = 0; z < CHUNK_SIZE; z++)
+		float noiseX = (position.x + static_cast<float>(x));
+		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
-			int height = FloatToIntNoise(noiseOutput[index++]);
-			for (int y = 0; y < height; y++)
+			float noiseY = (position.y + static_cast<float>(z));
+			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 0.5f;
+
+			int32_t height = FloatToIntNoise(noiseValue);
+			for (int32_t y = 0; y < height; y++)
 			{
-				if (OutOfBounds(x, y, z)) return;
+				if (OutOfBounds(x, y, z)) break;
 				AddBlock(x, y, z);
 			}
 		}
@@ -60,47 +76,67 @@ Chunk::Chunk(glm::ivec2 position, const std::array<float, CHUNK_SIZE*CHUNK_SIZE>
 
 Chunk::~Chunk()
 {
+	if (m_ChunkThread.joinable())
+		m_ChunkThread.join();
+
+	m_Vertices.clear();
+	m_Indices.clear();
 	glDeleteVertexArrays(1, &m_VAO);
 }
 
 void Chunk::CleanChunk()
 {
-	isCleaned = true;
-	isChunkLoaded = false;
-	std::memset(m_Blocks, 0, sizeof(m_Blocks));
+	if (m_ChunkThread.joinable())
+		m_ChunkThread.join();
+
+	m_Blocks.fill(0);
 	m_Vertices.clear();
 	m_Indices.clear();
+
+	isCleaned = true;
+	isChunkLoaded = false;
 }
 
-void Chunk::BuildChunk(glm::ivec2 position, const std::array<float, CHUNK_SIZE* CHUNK_SIZE>& noiseOutput)
+void Chunk::GenerateChunkT(glm::ivec2 position, FastNoiseLite& noise)
 {
-	isCleaned = false;
-	isChunkLoaded = true;
+	this->m_Noise = noise;
 	transform.model = glm::translate(transform.model, glm::vec3(position.x, 0, position.y));
+	transform.position = { position.x, 0, position.y };
+	//m_ChunkThread = std::thread(&Chunk::BuildChunk, this);
+	BuildChunk();
+}
 
-	int index = 0;
-	for (int8_t x = 0; x < CHUNK_SIZE; x++)
+void Chunk::BuildChunk()
+{
+	for (int32_t x = 0; x < CHUNK_SIZE; x++)
 	{
-		for (int8_t z = 0; z < CHUNK_SIZE; z++)
+		float noiseX = (transform.position.x + static_cast<float>(x));
+		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
-			int height = FloatToIntNoise(noiseOutput[index++]);
-			for (int y = 0; y < height; y++)
+			float noiseY = (transform.position.z + static_cast<float>(z));
+			float noiseValue = m_Noise.GetNoise(noiseX, noiseY);
+
+			int32_t height = FloatToIntNoise(noiseValue);
+			for (int32_t y = 0; y < height; y++)
 			{
-				if (OutOfBounds(x, y, z)) return;
+				if (OutOfBounds(x) || OutOfBounds(z) || OutOfBounds(y, CHUNK_HEIGHT)) break;
 				m_Blocks[GetBlockIndex(x, y, z)] = true;
 			}
 		}
 	}
 
-	index = 0;
-	for (int8_t x = 0; x < CHUNK_SIZE; x++)
+	for (int32_t x = 0; x < CHUNK_SIZE; x++)
 	{
-		for (int8_t z = 0; z < CHUNK_SIZE; z++)
+		float noiseX = (transform.position.x + static_cast<float>(x));
+		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
-			int height = FloatToIntNoise(noiseOutput[index++]);
-			for (int y = 0; y < height; y++)
+			float noiseY = (transform.position.z + static_cast<float>(z));
+			float noiseValue = m_Noise.GetNoise(noiseX, noiseY);
+
+			int32_t height = FloatToIntNoise(noiseValue);
+			for (int32_t y = 0; y < height; y++)
 			{
-				if (OutOfBounds(x, y, z)) return;
+				if (OutOfBounds(x) || OutOfBounds(z) || OutOfBounds(y, CHUNK_HEIGHT)) break;
 				AddBlock(x, y, z);
 			}
 		}
@@ -115,9 +151,12 @@ void Chunk::BuildChunk(glm::ivec2 position, const std::array<float, CHUNK_SIZE* 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	isChunkLoaded = true;
+	isCleaned = false;
 }
 
-int Chunk::GetBlockIndex(const int8_t x, const int y, const int8_t z) const
+int Chunk::GetBlockIndex(const int32_t x, const int y, const int32_t z) const
 {
 	return y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x;
 }
@@ -130,15 +169,15 @@ bool Chunk::GetBlock(const int x, const int y, const int z) const
 
 bool Chunk::OutOfBounds(const int x, const int y, const int z)
 {
-	return OutOfBounds(x) || OutOfBounds(y) || OutOfBounds(z);
+	return OutOfBounds(x) || OutOfBounds(y, CHUNK_HEIGHT) || OutOfBounds(z);
 }
 
-bool Chunk::OutOfBounds(const int value)
+bool Chunk::OutOfBounds(const int value, const int max)
 {
-	return value < 0 || value >= CHUNK_SIZE;
+	return value < 0 || value >= max;
 }
 
-void Chunk::AddBlock(const int8_t x, const int y, const int8_t z)
+void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 {
 	/*if (m_Blocks[GetBlockIndex(x, y, z - 1)]
 		&& m_Blocks[GetBlockIndex(x, y, z + 1)]
@@ -236,6 +275,8 @@ void Chunk::Draw()
 	m_Shader.setMat4("model", transform.model);
 	m_Shader.setMat4("view", transform.view);
 	m_Shader.setMat4("proj", transform.proj);
+
+	//std::cout << transform.position.x << "\n";
 
 	glBindVertexArray(m_VAO);
 	m_IBO.Bind();
