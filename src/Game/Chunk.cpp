@@ -184,198 +184,198 @@ void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 {
 	std::array<Vertex, 6> frontFace = {
 		Vertex{
-			glm::i9vec3(-1, -1, -1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(-1, -1, -1),
+			glm::u8vec2(0, 0),
 			0
 		},
 		Vertex{
-			glm::i9vec3(1, -1, -1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1, -1, -1),
+			glm::u8vec2(1, 0),
 			0
 		},
 		Vertex{
-			glm::i9vec3(1, 1, -1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(1, 1, -1),
+			glm::u8vec2(1, 1),
 			0
 		},
 		Vertex{
-			glm::i9vec3(1, 1, -1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(1, 1, -1),
+			glm::u8vec2(1, 1),
 			0
 		},
 		Vertex{
-			glm::i9vec3(-1, 1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1, 1, -1),
+			glm::u8vec2(0, 1),
 			0
 		},
 		Vertex{
-			glm::i9vec3(-1, -1, -1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(-1, -1, -1),
+			glm::u8vec2(0, 0),
 			0
 		}
 	};
 
 	std::array<Vertex, 6> backFace = {
 		Vertex{
-			glm::i9vec3(-1, -1,  1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(-1, -1,  1),
+			glm::u8vec2(0, 0),
 			1
 		},
 		Vertex{
-			glm::i9vec3(1, -1, 1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1, -1, 1),
+			glm::u8vec2(1, 0),
 			1
 		},
 		Vertex{
-			glm::i9vec3(1, 1, 1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(1, 1, 1),
+			glm::u8vec2(1, 1),
 			1
 		},
 		Vertex{
-			glm::i9vec3(1, 1, 1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(1, 1, 1),
+			glm::u8vec2(1, 1),
 			1
 		},
 		Vertex{
-			glm::i9vec3(-1, 1, 1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1, 1, 1),
+			glm::u8vec2(0, 1),
 			1
 		},
 		Vertex{
-			glm::i9vec3(-1, -1, 1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(-1, -1, 1),
+			glm::u8vec2(0, 0),
 			1
 		}
 	};
 
 	std::array<Vertex, 6> leftFace = {
 		Vertex{
-			glm::i9vec3(-1,  1,  1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(-1,  1,  1),
+			glm::u8vec2(1, 0),
 			2
 		},
 		Vertex{
-			glm::i9vec3(-1, 1, -1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(-1, 1, -1),
+			glm::u8vec2(1, 1),
 			2
 		},
 		Vertex{
-			glm::i9vec3(-1, -1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1, -1, -1),
+			glm::u8vec2(0, 1),
 			2
 		},
 		Vertex{
-			glm::i9vec3(-1, -1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1, -1, -1),
+			glm::u8vec2(0, 1),
 			2
 		},
 		Vertex{
-			glm::i9vec3(-1, -1, 1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(-1, -1, 1),
+			glm::u8vec2(0, 0),
 			2
 		},
 		Vertex{
-			glm::i9vec3(-1, 1, 1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(-1, 1, 1),
+			glm::u8vec2(1, 0),
 			2
 		}
 	};
 
 	std::array<Vertex, 6> rightFace = {
 		Vertex{
-			glm::i9vec3(1,  1,  1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1,  1,  1),
+			glm::u8vec2(1, 0),
 			3
 		},
 		Vertex{
-			glm::i9vec3(1, 1, -1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(1, 1, -1),
+			glm::u8vec2(1, 1),
 			3
 		},
 		Vertex{
-			glm::i9vec3(1, -1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(1, -1, -1),
+			glm::u8vec2(0, 1),
 			3
 		},
 		Vertex{
-			glm::i9vec3(1, -1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(1, -1, -1),
+			glm::u8vec2(0, 1),
 			3
 		},
 		Vertex{
-			glm::i9vec3(1, -1, 1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(1, -1, 1),
+			glm::u8vec2(0, 0),
 			3
 		},
 		Vertex{
-			glm::i9vec3(1, 1, 1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1, 1, 1),
+			glm::u8vec2(1, 0),
 			3
 		}
 	};
 
 	std::array<Vertex, 6> bottomFace = {
 		Vertex{
-			glm::i9vec3(-1,  -1,  -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1,  -1,  -1),
+			glm::u8vec2(0, 1),
 			4
 		},
 		Vertex{
-			glm::i9vec3(1, -1, -1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(1, -1, -1),
+			glm::u8vec2(1, 1),
 			4
 		},
 		Vertex{
-			glm::i9vec3(1, -1, 1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1, -1, 1),
+			glm::u8vec2(1, 0),
 			4
 		},
 		Vertex{
-			glm::i9vec3(1, -1, 1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1, -1, 1),
+			glm::u8vec2(1, 0),
 			4
 		},
 		Vertex{
-			glm::i9vec3(-1, -1, 1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(-1, -1, 1),
+			glm::u8vec2(0, 0),
 			4
 		},
 		Vertex{
-			glm::i9vec3(-1, -1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1, -1, -1),
+			glm::u8vec2(0, 1),
 			4
 		}
 	};
 
 	std::array<Vertex, 6> topFace = {
 		Vertex{
-			glm::i9vec3(-1,  1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1,  1, -1),
+			glm::u8vec2(0, 1),
 			9
 		},
 		Vertex{
-			glm::i9vec3(1, 1, -1),
-			glm::u9vec2(1, 1),
+			glm::i8vec3(1, 1, -1),
+			glm::u8vec2(1, 1),
 			9
 		},
 		Vertex{
-			glm::i9vec3(1, 1, 1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1, 1, 1),
+			glm::u8vec2(1, 0),
 			9
 		},
 		Vertex{
-			glm::i9vec3(1, 1, 1),
-			glm::u9vec2(1, 0),
+			glm::i8vec3(1, 1, 1),
+			glm::u8vec2(1, 0),
 			9
 		},
 		Vertex{
-			glm::i9vec3(-1, 1, 1),
-			glm::u9vec2(0, 0),
+			glm::i8vec3(-1, 1, 1),
+			glm::u8vec2(0, 0),
 			9
 		},
 		Vertex{
-			glm::i9vec3(-1, 1, -1),
-			glm::u9vec2(0, 1),
+			glm::i8vec3(-1, 1, -1),
+			glm::u8vec2(0, 1),
 			9
 		}
 	};
@@ -406,9 +406,9 @@ void Chunk::AddFace(const std::array<Vertex, 6> &blockFace, const glm::ivec3 &fa
 		m_Vertices.push_back(
 			Vertex{
 				{
-					(static_cast<int9_t>(facePos.x) + vert.position.x),
-					(static_cast<int9_t>(facePos.y) + vert.position.y),
-					(static_cast<int9_t>(facePos.z) + vert.position.z),
+					(static_cast<int8_t>(facePos.x) + vert.position.x),
+					(static_cast<int8_t>(facePos.y) + vert.position.y),
+					(static_cast<int8_t>(facePos.z) + vert.position.z),
 				},
 				vert.uv,
 				vert.normalIndex
