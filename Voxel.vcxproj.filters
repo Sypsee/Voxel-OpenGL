@@ -95,5 +95,8 @@
     <ClInclude Include="src\Game\AABB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Game\FrustumCulling.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

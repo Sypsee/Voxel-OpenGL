@@ -23,6 +23,7 @@ void Camera::update(GLFWwindow *window)
 	cameraDirection.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 
 	cameraFront = glm::normalize(cameraDirection);
+	cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
 
 	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 }
@@ -40,9 +41,9 @@ void Camera::process_inputs(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		cameraPos -= cameraSpeed * cameraFront;
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		cameraPos -= glm::normalize(cameraRight) * cameraSpeed;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		cameraPos += glm::normalize(cameraRight) * cameraSpeed;
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		cameraPos -= cameraSpeed * cameraUp;
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
@@ -88,6 +89,7 @@ void Camera::mouse_callback(double xpos, double ypos)
 
 void Camera::setAspectRatio(float aspect_ratio)
 {
+	aspectRatio = aspect_ratio;
 	proj = glm::perspective(glm::radians(FOV), aspect_ratio, nearClip, farClip);
 }
 

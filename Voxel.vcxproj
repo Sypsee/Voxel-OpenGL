@@ -178,6 +178,7 @@
     <ClInclude Include="src\Game\Chunk.h" />
     <ClInclude Include="src\Game\Clouds.h" />
     <ClInclude Include="src\Game\Frustum.h" />
+    <ClInclude Include="src\Game\FrustumCulling.h" />
     <ClInclude Include="src\Game\ObjectComponents.h" />
     <ClInclude Include="src\Game\World.h" />
     <ClInclude Include="src\OpenGL\Shader.h" />

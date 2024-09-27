@@ -1,12 +1,14 @@
 #include "Chunk.h"
 
+#include <cmath>
+
 int32_t FloatToIntNoise(float val)
 {
-	return static_cast<int32_t>(((val + 1) / 2) * 40);
+	return static_cast<int32_t>(((val + 1) / 2) * 90);
 }
 
 Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
-	:m_Blocks{0}
+	:m_Blocks{0}, aabb{glm::vec3(position.x / CHUNK_SIZE - 9, 0, position.y / CHUNK_SIZE - 9), glm::vec3(position.x + 9, 0, position.y + 9) + glm::vec3(CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE)}
 {
 	this->m_Noise = noise;
 	transform.position = { position.x, 0, position.y };
@@ -65,13 +67,14 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 
 	glBindVertexArray(m_VAO);
 
-	//m_IBO.UploadData(&m_Indices[0], m_Indices.size() * sizeof(unsigned int));
-	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(float));
+	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uv)));
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 1, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
+	glEnableVertexAttribArray(2);
 }
 
 Chunk::~Chunk()
@@ -86,7 +89,6 @@ void Chunk::CleanChunk()
 
 	m_Blocks.fill(0);
 	m_Vertices.clear();
-	m_Indices.clear();
 	m_Noise = NULL;
 
 	glDeleteVertexArrays(1, &m_VAO);
@@ -146,11 +148,11 @@ void Chunk::BuildChunk()
 
 	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
 
-	glVertexAttribPointer(0, 3, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)0);
+	glVertexAttribIPointer(0, 3, GL_BYTE, sizeof(Vertex), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uv)));
+	glVertexAttribIPointer(1, 2, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uv)));
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 1, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
+	glVertexAttribIPointer(2, 1, GL_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
 	glEnableVertexAttribArray(2);
 
 	isChunkLoaded = true;
@@ -180,142 +182,202 @@ bool Chunk::OutOfBounds(const int value, const int max)
 
 void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 {
-	std::array<Vertex, 4> frontFace = {
+	std::array<Vertex, 6> frontFace = {
 		Vertex{
-			glm::i8vec3(-1, -1, -1),
-			glm::u8vec2(0, 0),
+			glm::i9vec3(-1, -1, -1),
+			glm::u9vec2(0, 0),
 			0
 		},
 		Vertex{
-			glm::i8vec3(1, -1, -1),
-			glm::u8vec2(1, 0),
+			glm::i9vec3(1, -1, -1),
+			glm::u9vec2(1, 0),
 			0
 		},
 		Vertex{
-			glm::i8vec3(1, 1, -1),
-			glm::u8vec2(1, 1),
+			glm::i9vec3(1, 1, -1),
+			glm::u9vec2(1, 1),
 			0
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, -1),
-			glm::u8vec2(0, 1),
+			glm::i9vec3(1, 1, -1),
+			glm::u9vec2(1, 1),
 			0
 		},
+		Vertex{
+			glm::i9vec3(-1, 1, -1),
+			glm::u9vec2(0, 1),
+			0
+		},
+		Vertex{
+			glm::i9vec3(-1, -1, -1),
+			glm::u9vec2(0, 0),
+			0
+		}
 	};
 
-	std::array<Vertex, 4> backFace = {
+	std::array<Vertex, 6> backFace = {
 		Vertex{
-			glm::i8vec3(-1, -1,  1),
-			glm::u8vec2(0, 0),
+			glm::i9vec3(-1, -1,  1),
+			glm::u9vec2(0, 0),
 			1
 		},
 		Vertex{
-			glm::i8vec3(1, -1, 1),
-			glm::u8vec2(1, 0),
+			glm::i9vec3(1, -1, 1),
+			glm::u9vec2(1, 0),
 			1
 		},
 		Vertex{
-			glm::i8vec3(1, 1, 1),
-			glm::u8vec2(1, 1),
+			glm::i9vec3(1, 1, 1),
+			glm::u9vec2(1, 1),
 			1
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, 1),
-			glm::u8vec2(0, 1),
+			glm::i9vec3(1, 1, 1),
+			glm::u9vec2(1, 1),
 			1
 		},
+		Vertex{
+			glm::i9vec3(-1, 1, 1),
+			glm::u9vec2(0, 1),
+			1
+		},
+		Vertex{
+			glm::i9vec3(-1, -1, 1),
+			glm::u9vec2(0, 0),
+			1
+		}
 	};
 
-	std::array<Vertex, 4> leftFace = {
+	std::array<Vertex, 6> leftFace = {
 		Vertex{
-			glm::i8vec3(-1,  1,  1),
-			glm::u8vec2(0, 1),
+			glm::i9vec3(-1,  1,  1),
+			glm::u9vec2(1, 0),
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, -1),
-			glm::u8vec2(0, 1),
+			glm::i9vec3(-1, 1, -1),
+			glm::u9vec2(1, 1),
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, -1),
-			glm::u8vec2(0, 0),
+			glm::i9vec3(-1, -1, -1),
+			glm::u9vec2(0, 1),
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, 1),
-			glm::u8vec2(0, 0),
+			glm::i9vec3(-1, -1, -1),
+			glm::u9vec2(0, 1),
 			2
 		},
+		Vertex{
+			glm::i9vec3(-1, -1, 1),
+			glm::u9vec2(0, 0),
+			2
+		},
+		Vertex{
+			glm::i9vec3(-1, 1, 1),
+			glm::u9vec2(1, 0),
+			2
+		}
 	};
 
-	std::array<Vertex, 4> rightFace = {
+	std::array<Vertex, 6> rightFace = {
 		Vertex{
-			glm::i8vec3(1,  1,  1),
-			glm::u8vec2(1, 1),
+			glm::i9vec3(1,  1,  1),
+			glm::u9vec2(1, 0),
 			3
 		},
 		Vertex{
-			glm::i8vec3(1, 1, -1),
-			glm::u8vec2(1, 1),
+			glm::i9vec3(1, 1, -1),
+			glm::u9vec2(1, 1),
 			3
 		},
 		Vertex{
-			glm::i8vec3(1, -1, -1),
-			glm::u8vec2(1, 0),
+			glm::i9vec3(1, -1, -1),
+			glm::u9vec2(0, 1),
 			3
 		},
 		Vertex{
-			glm::i8vec3(1, -1, 1),
-			glm::u8vec2(1, 0),
+			glm::i9vec3(1, -1, -1),
+			glm::u9vec2(0, 1),
 			3
 		},
+		Vertex{
+			glm::i9vec3(1, -1, 1),
+			glm::u9vec2(0, 0),
+			3
+		},
+		Vertex{
+			glm::i9vec3(1, 1, 1),
+			glm::u9vec2(1, 0),
+			3
+		}
 	};
 
-	std::array<Vertex, 4> bottomFace = {
+	std::array<Vertex, 6> bottomFace = {
 		Vertex{
-			glm::i8vec3(-1,  -1,  -1),
-			glm::u8vec2(0, 0),
+			glm::i9vec3(-1,  -1,  -1),
+			glm::u9vec2(0, 1),
 			4
 		},
 		Vertex{
-			glm::i8vec3(1, -1, -1),
-			glm::u8vec2(1, 0),
+			glm::i9vec3(1, -1, -1),
+			glm::u9vec2(1, 1),
 			4
 		},
 		Vertex{
-			glm::i8vec3(1, -1, 1),
-			glm::u8vec2(1, 0),
+			glm::i9vec3(1, -1, 1),
+			glm::u9vec2(1, 0),
 			4
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, 1),
-			glm::u8vec2(0, 0),
+			glm::i9vec3(1, -1, 1),
+			glm::u9vec2(1, 0),
 			4
 		},
+		Vertex{
+			glm::i9vec3(-1, -1, 1),
+			glm::u9vec2(0, 0),
+			4
+		},
+		Vertex{
+			glm::i9vec3(-1, -1, -1),
+			glm::u9vec2(0, 1),
+			4
+		}
 	};
 
-	std::array<Vertex, 4> topFace = {
+	std::array<Vertex, 6> topFace = {
 		Vertex{
-			glm::i8vec3(-1,  1,  -1),
-			glm::u8vec2(0, 1),
-			5
+			glm::i9vec3(-1,  1, -1),
+			glm::u9vec2(0, 1),
+			9
 		},
 		Vertex{
-			glm::i8vec3(1, 1, -1),
-			glm::u8vec2(1, 1),
-			5
+			glm::i9vec3(1, 1, -1),
+			glm::u9vec2(1, 1),
+			9
 		},
 		Vertex{
-			glm::i8vec3(1, 1, 1),
-			glm::u8vec2(1, 1),
-			5
+			glm::i9vec3(1, 1, 1),
+			glm::u9vec2(1, 0),
+			9
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, 1),
-			glm::u8vec2(0, 1),
-			5
+			glm::i9vec3(1, 1, 1),
+			glm::u9vec2(1, 0),
+			9
 		},
+		Vertex{
+			glm::i9vec3(-1, 1, 1),
+			glm::u9vec2(0, 0),
+			9
+		},
+		Vertex{
+			glm::i9vec3(-1, 1, -1),
+			glm::u9vec2(0, 1),
+			9
+		}
 	};
 
 	glm::ivec3 facePos = { x,y,z };
@@ -323,33 +385,30 @@ void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 	TryAddFace(backFace, facePos, { x, y, z + 1 });
 	TryAddFace(leftFace, facePos, { x - 1, y, z });
 	TryAddFace(rightFace, facePos, { x + 1, y, z });
-	if (y != 0)
+	if (y != 0 || OutOfBounds(x, y - 1, z))
 		TryAddFace(bottomFace, facePos, { x, y - 1, z });
 	TryAddFace(topFace, facePos, { x, y + 1, z});
 }
 
-void Chunk::TryAddFace(const std::array<Vertex, 4>& blockFace, const glm::ivec3& facePos, const glm::ivec3& adjacentBlock)
+void Chunk::TryAddFace(const std::array<Vertex, 6>& blockFace, const glm::ivec3& facePos, const glm::ivec3& adjacentBlock)
 {
-	if (OutOfBounds(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z))
-	{
-		AddFace(blockFace, facePos);
-	}
-	else if (!m_Blocks[GetBlockIndex(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)])
+	if (OutOfBounds(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z) ||
+		!m_Blocks[GetBlockIndex(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)])
 	{
 		AddFace(blockFace, facePos);
 	}
 }
 
-void Chunk::AddFace(const std::array<Vertex, 4> &blockFace, const glm::ivec3 &facePos)
+void Chunk::AddFace(const std::array<Vertex, 6> &blockFace, const glm::ivec3 &facePos)
 {
 	for (Vertex vert : blockFace)
 	{
 		m_Vertices.push_back(
 			Vertex{
 				{
-					(static_cast<int8_t>(facePos.x) + vert.position.x),
-					(static_cast<int8_t>(facePos.y) + vert.position.y),
-					(static_cast<int8_t>(facePos.z) + vert.position.z),
+					(static_cast<int9_t>(facePos.x) + vert.position.x),
+					(static_cast<int9_t>(facePos.y) + vert.position.y),
+					(static_cast<int9_t>(facePos.z) + vert.position.z),
 				},
 				vert.uv,
 				vert.normalIndex

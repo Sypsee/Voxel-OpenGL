@@ -16,8 +16,8 @@ vec3 lightPos = vec3(0, 1, -1);
 vec3 lightColor = vec3(1,1,1);
 vec3 specularReflectionColor = vec3(1,1,1);
 float lightIntensity = 1;
-float ambientIntensity = .8;
-float shininess = .05;
+float ambientIntensity = .6;
+float shininess = .02;
 float alpha = 100;
 
 vec3 baseColor = vec3(0.09, 0.8, 0.23);

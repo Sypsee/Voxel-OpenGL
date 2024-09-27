@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
-
 class Camera
 {
 public:
@@ -16,8 +15,16 @@ public:
 	void setPosition(glm::vec3 pos);
 
 	glm::vec3 getPosition() const;
+	inline glm::vec3 getFrontDirection() const { return cameraFront; }
+	inline glm::vec3 getRightDirection() const { return cameraRight; }
+	inline glm::vec3 getUpDirection() const { return cameraUp; }
 	glm::mat4 getProjMatrix() const;
 	glm::mat4 getViewMatrix() const;
+
+	inline float getNearClip() const { return nearClip; }
+	inline float getFarClip() const { return farClip; }
+	inline float getFOV() const { return glm::radians(FOV); }
+	inline float getAspectRatio() const { return aspectRatio; }
 
 private:
 	void process_inputs(GLFWwindow* window);
@@ -26,11 +33,14 @@ private:
 
 	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 	glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 cameraRight = glm::vec3(1.0f, 0.0f, 0.0f);
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 cameraDirection = glm::vec3(0.f, 0.f, 0.f);
 
 	float deltaTime = 0.0f;	// Time between current frame and last frame
 	float lastFrame = 0.0f; // Time of last frame
+
+	float aspectRatio = 800 / 600;
 
 	float yaw = -90.f;
 	float pitch = 1.f;

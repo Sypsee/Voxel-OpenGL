@@ -1,5 +1,7 @@
 #include "World.h"
 
+#include "FrustumCulling.h"
+
 World::World()
 {
 	noise.SetSeed(seed);
@@ -34,11 +36,13 @@ bool World::GetBlock(const int x, const int y, const int z)
 
 void World::Draw(const Camera& cam)
 {
+	fc.Update(cam);
+
 	float unloadDistance = static_cast<float>(m_RenderDistance + 1) * CHUNK_SIZE + 8.0f;
 	for (auto &chunk : chunks)
 	{
 		// Chunk Drawing
-		if (chunk.second.isChunkLoaded)
+		if (chunk.second.isChunkLoaded && chunk.second.aabb.isOnFrustum(fc.frustum, chunk.second.transform))
 		{
 			chunk.second.transform.proj = cam.getProjMatrix();
 			chunk.second.transform.view = cam.getViewMatrix();
@@ -70,7 +74,7 @@ void World::Draw(const Camera& cam)
 				{
 					if (x != minX && x != maxX - 1 && z != minZ && z != maxZ - 1 && !chunks[{x*CHUNK_SIZE, z*CHUNK_SIZE}].isChunkLoaded)
 					{
-						chunks[{x* CHUNK_SIZE, z* CHUNK_SIZE}].GenerateChunkT({ x * CHUNK_SIZE, z * CHUNK_SIZE }, noise);
+						chunks[{x * CHUNK_SIZE, z * CHUNK_SIZE}].GenerateChunkT({ x * CHUNK_SIZE, z * CHUNK_SIZE }, noise);
 						isChunkLoaded = chunks[{x * CHUNK_SIZE, z * CHUNK_SIZE}].isChunkLoaded;
 					}
 				}
