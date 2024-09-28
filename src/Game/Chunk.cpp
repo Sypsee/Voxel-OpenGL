@@ -99,17 +99,6 @@ void Chunk::BuildChunk()
 		}
 	}
 
-	glBindVertexArray(m_VAO);
-
-	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
-
-	glVertexAttribIPointer(0, 3, GL_BYTE, sizeof(Vertex), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uvIndex)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
-	glEnableVertexAttribArray(2);
-
 	isChunkLoaded = true;
 	isCleaned = false;
 }
@@ -350,6 +339,23 @@ void Chunk::TryAddFace(const std::array<Vertex, 6>& blockFace, const glm::ivec3&
 	if (OutOfBounds(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z) ||
 		!m_Blocks[GetBlockIndex(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)])
 	{
+		/*if (cXN != nullptr)
+		{
+			if (cXN->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
+		}
+		if (cXP != nullptr)
+		{
+			if (cXP->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
+		}
+		if (cZN != nullptr)
+		{
+			if (cZN->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
+		}
+		if (cZP != nullptr)
+		{
+			if (cZP->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
+		}*/
+
 		AddFace(blockFace, facePos);
 	}
 }
@@ -381,6 +387,22 @@ void Chunk::AddFace(const std::array<Vertex, 6> &blockFace, const glm::ivec3 &fa
 void Chunk::Draw()
 {
 	if (!isChunkLoaded) return;
+
+	if (generateGLData)
+	{
+		glBindVertexArray(m_VAO);
+
+		m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
+
+		glVertexAttribIPointer(0, 3, GL_BYTE, sizeof(Vertex), (void*)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uvIndex)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
+		glEnableVertexAttribArray(2);
+
+		generateGLData = false;
+	}
 
 	m_Shader.Bind();
 	m_Shader.setMat4("model", transform.model);

@@ -68,8 +68,8 @@ Application::Application()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_BLEND);
-	/*glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);*/
+	//glEnable(GL_CULL_FACE);
+	//glCullFace(GL_FRONT);
 	/*glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(message_callback, nullptr);*/
 

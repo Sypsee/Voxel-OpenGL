@@ -10,13 +10,13 @@ World::World()
 	noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	noise.SetFractalType(FastNoiseLite::FractalType_FBm);
 
-	for (int16_t x = -chunkDiameter; x <= chunkDiameter; x += CHUNK_SIZE)
+	/*for (int16_t x = -chunkDiameter; x <= chunkDiameter; x += CHUNK_SIZE)
 	{
 		for (int16_t z = -chunkDiameter; z <= chunkDiameter; z += CHUNK_SIZE)
 		{
 			chunks[{x, z}].GenerateChunkT({ x,z }, noise);
 		}
-	}
+	}*/
 }
 
 bool World::GetBlock(const int x, const int y, const int z)
@@ -36,7 +36,51 @@ bool World::GetBlock(const int x, const int y, const int z)
 
 void World::Draw(const Camera& cam)
 {
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - previousTime).count();
+	previousTime = currentTime;
+
+	std::cout << elapsedTime << "ms\n";
+
 	fc.Update(cam);
+
+	// Chunk Loading
+	int cameraX = cam.getPosition().x / CHUNK_SIZE;
+	int cameraZ = cam.getPosition().z / CHUNK_SIZE;
+
+	bool isChunkLoaded = false;
+	for (int i = 0; i < m_LoadDistance; i++)
+	{
+		int minX = cameraX - i;
+		int minZ = cameraZ - i;
+		int maxX = cameraX + i;
+		int maxZ = cameraZ + i;
+
+		for (int x = minX; x < maxX; x++)
+		{
+			for (int z = minZ; z < maxZ; z++)
+			{
+				int chunkXPos = x * CHUNK_SIZE;
+				int chunkZPos = z * CHUNK_SIZE;
+
+				if (x != minX && x != maxX - 1 && z != minZ && z != maxZ - 1 && !chunks[{chunkXPos, chunkZPos}].isChunkLoaded)
+				{
+					//chunks[{chunkXPos, chunkZPos}].cXN = chunkXPos > 0 ? &chunks[{chunkXPos - 1, chunkZPos}] : nullptr;
+					//chunks[{chunkXPos, chunkZPos}].cXP = chunkXPos < CHUNK_SIZE ? &chunks[{chunkXPos + 1, chunkZPos}] : nullptr;
+					//chunks[{chunkXPos, chunkZPos}].cZN = chunkZPos > 0 ? &chunks[{chunkXPos, chunkZPos - 1}] : nullptr;
+					//chunks[{chunkXPos, chunkZPos}].cZP = chunkZPos < CHUNK_SIZE ? &chunks[{chunkXPos, chunkZPos + 1}] : nullptr;
+
+					chunks[{chunkXPos, chunkZPos}].GenerateChunkT({ chunkXPos, chunkZPos }, noise);
+					isChunkLoaded = chunks[{chunkXPos, chunkZPos}].isChunkLoaded;
+				}
+			}
+		}
+
+		if (isChunkLoaded) break;
+	}
+
+	if (!isChunkLoaded) m_LoadDistance++;
+	if (m_LoadDistance >= m_RenderDistance) m_LoadDistance = 2;
 
 	float unloadDistance = static_cast<float>(m_RenderDistance + 1) * CHUNK_SIZE;
 	for (auto chunk = chunks.begin(); chunk != chunks.end();)
@@ -60,34 +104,4 @@ void World::Draw(const Camera& cam)
 			chunk++;
 		}
 	}
-
-	// Chunk Loading
-	int cameraX = cam.getPosition().x / CHUNK_SIZE;
-	int cameraZ = cam.getPosition().z / CHUNK_SIZE;
-
-	bool isChunkLoaded = false;
-	for (int i = 0; i < m_LoadDistance; i++)
-	{
-		int minX = cameraX - i;
-		int minZ = cameraZ - i;
-		int maxX = cameraX + i;
-		int maxZ = cameraZ + i;
-
-		for (int x = minX; x < maxX; x++)
-		{
-			for (int z = minZ; z < maxZ; z++)
-			{
-				if (x != minX && x != maxX - 1 && z != minZ && z != maxZ - 1 && !chunks[{x* CHUNK_SIZE, z* CHUNK_SIZE}].isChunkLoaded)
-				{
-					chunks[{x* CHUNK_SIZE, z* CHUNK_SIZE}].GenerateChunkT({ x * CHUNK_SIZE, z * CHUNK_SIZE }, noise);
-					isChunkLoaded = chunks[{x* CHUNK_SIZE, z* CHUNK_SIZE}].isChunkLoaded;
-				}
-			}
-		}
-
-		if (isChunkLoaded) break;
-	}
-
-	if (!isChunkLoaded) m_LoadDistance++;
-	if (m_LoadDistance >= m_RenderDistance) m_LoadDistance = 2;
 }

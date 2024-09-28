@@ -8,6 +8,7 @@
 #include <FastNoise/FastNoiseLite.h>
 
 #include <unordered_map>
+#include <chrono>
 
 class World
 {
@@ -29,4 +30,6 @@ private:
 	int8_t m_LoadDistance = 2;
 
 	FrustumCulling fc;
+
+	std::chrono::time_point<std::chrono::high_resolution_clock> previousTime;
 };

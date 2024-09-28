@@ -50,6 +50,8 @@ public:
 	std::atomic<bool> isCleaned{ false };
 	std::atomic<bool> isChunkLoaded{ false };
 
+	//const Chunk* cXN = nullptr, * cXP = nullptr, * cZN = nullptr, * cZP = nullptr;
+
 private:
 	std::array<bool, CHUNK_SIZE*CHUNK_HEIGHT*CHUNK_SIZE> m_Blocks;
 	std::vector<Vertex> m_Vertices;
@@ -60,6 +62,7 @@ private:
 	Texture m_GrassTex{"res/textures/grass.jpg"};
 	unsigned int m_VAO;
 
+	bool generateGLData = true;
 	std::thread m_ChunkThread;
 	std::mutex mtx;
 };
