@@ -1,9 +1,9 @@
 # VOXEL ENGINE
-A basic voxel rasterizer written in opengl for fun!
+<h4>A basic voxel rasterizer written in opengl for fun!</h4>
 
-Todo :-
--- Add Greedy meshing
--- Add Multi-threading
--- Improved World Generation
--- Optimize Further
--- More Block types
+<b>Todo :-</b><br/>
+<i>-- Add Greedy meshing</i><br/>
+<i>-- Add Multi-threading</i><br/>
+<i>-- Improved World Generation</i><br/>
+<i>-- Optimize Further</i><br/>
+<i>-- More Block types</i><br/>
