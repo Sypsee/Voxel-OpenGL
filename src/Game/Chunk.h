@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #include "../OpenGL/Shader.h"
 #include "../OpenGL/Buffer.h"
@@ -46,13 +47,12 @@ public:
 	Transform transform{};
 	AABB aabb;
 
-	bool isCleaned = false;
-	bool isChunkLoaded = false;
+	std::atomic<bool> isCleaned{ false };
+	std::atomic<bool> isChunkLoaded{ false };
 
 private:
 	std::array<bool, CHUNK_SIZE*CHUNK_HEIGHT*CHUNK_SIZE> m_Blocks;
 	std::vector<Vertex> m_Vertices;
-	std::vector<int32_t> xCoord;	// For thread
 
 	FastNoiseLite m_Noise;
 	Shader m_Shader;
@@ -61,4 +61,5 @@ private:
 	unsigned int m_VAO;
 
 	std::thread m_ChunkThread;
+	std::mutex mtx;
 };

@@ -41,8 +41,8 @@ void main()
 	float transmittance = exp(-distance * ABSORPTION);
 	if (transmittance < 0.01) return;
 
-	vec3 finalColor = base_color * transmittance;
-	if (finalColor > 0.1) discard;
+	vec4 finalColor = vec4(base_color * transmittance, transmittance);
+	if (finalColor.a > 0.1) discard;
 
-	FragColor = vec4(finalColor, 1.0);
+	FragColor = finalColor;
 }

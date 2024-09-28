@@ -20,18 +20,11 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 	m_GrassTex.Bind();
 	m_Shader.setI("tex", 0);
 
-	xCoord.reserve(CHUNK_SIZE);
-
-	for (int x = 0; x < CHUNK_SIZE; x++)
-	{
-		xCoord.push_back(x);
-	}
-
 	glGenVertexArrays(1, &m_VAO);
 
 	if (!shouldBuild) return;
 
-	BuildChunk();
+	m_ChunkThread = std::thread(&Chunk::BuildChunk, this);
 }
 
 Chunk::~Chunk()
@@ -61,8 +54,13 @@ void Chunk::GenerateChunkT(glm::ivec2 position, FastNoiseLite& noise)
 	this->m_Noise = noise;
 	transform.model = glm::translate(transform.model, glm::vec3(position.x, 0, position.y));
 	transform.position = { position.x, 0, position.y };
-	//m_ChunkThread = std::thread(&Chunk::BuildChunk, this);
-	BuildChunk();
+
+	if (m_ChunkThread.joinable()) {
+		m_ChunkThread.join();
+	}
+
+	m_ChunkThread = std::thread(&Chunk::BuildChunk, this);
+	//BuildChunk();
 }
 
 void Chunk::BuildChunk()
@@ -358,24 +356,32 @@ void Chunk::TryAddFace(const std::array<Vertex, 6>& blockFace, const glm::ivec3&
 
 void Chunk::AddFace(const std::array<Vertex, 6> &blockFace, const glm::ivec3 &facePos)
 {
-	for (Vertex vert : blockFace)
-	{
-		m_Vertices.push_back(
-			Vertex{
-				{
-					(static_cast<int8_t>(facePos.x) + vert.position.x),
-					(static_cast<int8_t>(facePos.y) + vert.position.y),
-					(static_cast<int8_t>(facePos.z) + vert.position.z),
-				},
-				vert.uvIndex,
-				vert.normalIndex
-			}
-		);
+	try {
+		std::lock_guard<std::mutex> lock(mtx);
+
+		for (const Vertex& vert : blockFace) {
+			m_Vertices.push_back(
+				Vertex{
+					{
+						static_cast<int8_t>(facePos.x) + vert.position.x,
+						static_cast<int8_t>(facePos.y) + vert.position.y,
+						static_cast<int8_t>(facePos.z) + vert.position.z,
+					},
+					vert.uvIndex,
+					vert.normalIndex
+				}
+			);
+		}
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Exception in AddFace: " << e.what() << std::endl;
 	}
 }
 
 void Chunk::Draw()
 {
+	if (!isChunkLoaded) return;
+
 	m_Shader.Bind();
 	m_Shader.setMat4("model", transform.model);
 	m_Shader.setMat4("view", transform.view);
