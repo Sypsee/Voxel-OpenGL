@@ -38,52 +38,56 @@ void World::Draw(const Camera& cam)
 {
 	fc.Update(cam);
 
-	float unloadDistance = static_cast<float>(m_RenderDistance + 1) * CHUNK_SIZE + 8.0f;
-	for (auto &chunk : chunks)
+	float unloadDistance = static_cast<float>(m_RenderDistance + 1) * CHUNK_SIZE;
+	for (auto chunk = chunks.begin(); chunk != chunks.end();)
 	{
 		// Chunk Drawing
-		if (chunk.second.isChunkLoaded && chunk.second.aabb.isOnFrustum(fc.frustum, chunk.second.transform))
+		if (chunks.find(chunk->first) != chunks.end() && chunk->second.aabb.isOnFrustum(fc.frustum, chunk->second.transform))
 		{
-			chunk.second.transform.proj = cam.getProjMatrix();
-			chunk.second.transform.view = cam.getViewMatrix();
-			chunk.second.transform.camPos = cam.getPosition();
-			chunk.second.Draw();
+			chunk->second.transform.proj = cam.getProjMatrix();
+			chunk->second.transform.view = cam.getViewMatrix();
+			chunk->second.transform.camPos = cam.getPosition();
+			chunk->second.Draw();
 		}
 
 		// Chunk Cleaning
-		if (glm::abs(glm::distance(glm::vec3(chunk.first.x, 0, chunk.first.y), glm::vec3(cam.getPosition().x, 0, cam.getPosition().z))) > unloadDistance && chunk.second.isChunkLoaded)
+		if (glm::abs(glm::distance(glm::vec3(chunk->first.x, 0, chunk->first.y), glm::vec3(cam.getPosition().x, 0, cam.getPosition().z))) > unloadDistance && chunk->second.isChunkLoaded)
 		{
-			chunk.second.CleanChunk();
+			chunk = chunks.erase(chunk);
 		}
-
-		// Chunk Loading
-		int cameraX = cam.getPosition().x / CHUNK_SIZE;
-		int cameraZ = cam.getPosition().z / CHUNK_SIZE;
-
-		bool isChunkLoaded = false;
-		for (int i = 0; i < m_LoadDistance; i++)
+		else
 		{
-			int minX = cameraX - i;
-			int minZ = cameraZ - i;
-			int maxX = cameraX + i;
-			int maxZ = cameraZ + i;
+			chunk++;
+		}
+	}
 
-			for (int x = minX; x < maxX; x++)
+	// Chunk Loading
+	int cameraX = cam.getPosition().x / CHUNK_SIZE;
+	int cameraZ = cam.getPosition().z / CHUNK_SIZE;
+
+	bool isChunkLoaded = false;
+	for (int i = 0; i < m_LoadDistance; i++)
+	{
+		int minX = cameraX - i;
+		int minZ = cameraZ - i;
+		int maxX = cameraX + i;
+		int maxZ = cameraZ + i;
+
+		for (int x = minX; x < maxX; x++)
+		{
+			for (int z = minZ; z < maxZ; z++)
 			{
-				for (int z = minZ; z < maxZ; z++)
+				if (x != minX && x != maxX - 1 && z != minZ && z != maxZ - 1 && !chunks[{x* CHUNK_SIZE, z* CHUNK_SIZE}].isChunkLoaded)
 				{
-					if (x != minX && x != maxX - 1 && z != minZ && z != maxZ - 1 && !chunks[{x*CHUNK_SIZE, z*CHUNK_SIZE}].isChunkLoaded)
-					{
-						chunks[{x * CHUNK_SIZE, z * CHUNK_SIZE}].GenerateChunkT({ x * CHUNK_SIZE, z * CHUNK_SIZE }, noise);
-						isChunkLoaded = chunks[{x * CHUNK_SIZE, z * CHUNK_SIZE}].isChunkLoaded;
-					}
+					chunks[{x* CHUNK_SIZE, z* CHUNK_SIZE}].GenerateChunkT({ x * CHUNK_SIZE, z * CHUNK_SIZE }, noise);
+					isChunkLoaded = chunks[{x* CHUNK_SIZE, z* CHUNK_SIZE}].isChunkLoaded;
 				}
 			}
-
-			if (isChunkLoaded) break;
 		}
 
-		if (!isChunkLoaded) m_LoadDistance++;
-		if (m_LoadDistance >= m_RenderDistance) m_LoadDistance = 2;
+		if (isChunkLoaded) break;
 	}
+
+	if (!isChunkLoaded) m_LoadDistance++;
+	if (m_LoadDistance >= m_RenderDistance) m_LoadDistance = 2;
 }

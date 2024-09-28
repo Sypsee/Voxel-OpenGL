@@ -1,8 +1,8 @@
 #version 450 core
 
 layout(location = 0) in ivec3 aPos;
-layout(location = 1) in ivec2 aUv;
-layout(location = 2) in int aNormal;
+layout(location = 1) in int aUVIndex;
+layout(location = 2) in int aNormalIndex;
 
 out vec3 fragPos;
 out vec3 normal;
@@ -22,11 +22,18 @@ vec3 normals[6] = {
 	vec3(0,  1,  0)
 };
 
+vec2 uvs[4] = {
+	vec2(0, 0),
+	vec2(1, 0),
+	vec2(0, 1),
+	vec2(1, 1),
+};
+
 void main()
 {
 	fragPos = vec3(model * vec4(aPos, 1.0));
-	normal = mat3(transpose(inverse(model))) * normals[aNormal];
-	uv = aUv;
+	normal = mat3(transpose(inverse(model))) * normals[aNormalIndex];
+	uv = uvs[aUVIndex];
 
 	gl_Position = proj * view * model * vec4(aPos, 1.0);
 }

@@ -8,7 +8,7 @@ int32_t FloatToIntNoise(float val)
 }
 
 Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
-	:m_Blocks{0}, aabb{glm::vec3(position.x / CHUNK_SIZE - 9, 0, position.y / CHUNK_SIZE - 9), glm::vec3(position.x + 9, 0, position.y + 9) + glm::vec3(CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE)}
+	:m_Blocks{0}, aabb{glm::vec3(position.x / CHUNK_SIZE - 10, 0, position.y / CHUNK_SIZE - 10), glm::vec3(position.x + 10, 0, position.y + 10) + glm::vec3(CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_SIZE)}
 {
 	this->m_Noise = noise;
 	transform.position = { position.x, 0, position.y };
@@ -31,50 +31,7 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 
 	if (!shouldBuild) return;
 
-	for (int32_t x = 0; x < CHUNK_SIZE; x++)
-	{
-		float noiseX = (position.x + static_cast<float>(x));
-		for (int32_t z = 0; z < CHUNK_SIZE; z++)
-		{
-			float noiseY = (position.y + static_cast<float>(z));
-			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 1;
-
-			int32_t height = FloatToIntNoise(noiseValue);
-			for (int32_t y = 0; y < height; y++)
-			{
-				if (OutOfBounds(x, y, z)) break;
-				m_Blocks[GetBlockIndex(x, y, z)] = true;
-			}
-		}
-	}
-
-	for (int32_t x = 0; x < CHUNK_SIZE; x++)
-	{
-		float noiseX = (position.x + static_cast<float>(x));
-		for (int32_t z = 0; z < CHUNK_SIZE; z++)
-		{
-			float noiseY = (position.y + static_cast<float>(z));
-			float noiseValue = m_Noise.GetNoise(noiseX, noiseY) / 2.0f + 1;
-
-			int32_t height = FloatToIntNoise(noiseValue);
-			for (int32_t y = 0; y < height; y++)
-			{
-				if (OutOfBounds(x, y, z)) break;
-				AddBlock(x, y, z);
-			}
-		}
-	}
-
-	glBindVertexArray(m_VAO);
-
-	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
-
-	glVertexAttribPointer(0, 3, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uv)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 1, GL_BYTE, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
-	glEnableVertexAttribArray(2);
+	BuildChunk();
 }
 
 Chunk::~Chunk()
@@ -93,7 +50,7 @@ void Chunk::CleanChunk()
 
 	glDeleteVertexArrays(1, &m_VAO);
 	m_Shader.DestroyShader();
-	//m_VBO.DestroyBuffer();
+	m_VBO.DestroyBuffer();
 
 	isCleaned = true;
 	isChunkLoaded = false;
@@ -150,9 +107,9 @@ void Chunk::BuildChunk()
 
 	glVertexAttribIPointer(0, 3, GL_BYTE, sizeof(Vertex), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribIPointer(1, 2, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uv)));
+	glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uvIndex)));
 	glEnableVertexAttribArray(1);
-	glVertexAttribIPointer(2, 1, GL_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
+	glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
 	glEnableVertexAttribArray(2);
 
 	isChunkLoaded = true;
@@ -161,12 +118,12 @@ void Chunk::BuildChunk()
 
 int Chunk::GetBlockIndex(const int32_t x, const int y, const int32_t z) const
 {
-	return y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x;
+	return z * CHUNK_SIZE * CHUNK_HEIGHT + y * CHUNK_SIZE + x;
 }
 
 bool Chunk::GetBlock(const int x, const int y, const int z) const
 {
-	if (x < 0 || x >= CHUNK_SIZE || z < 0 || z >= CHUNK_SIZE || y < 0 || y >= CHUNK_SIZE) return false;
+	if (x < 0 || x >= CHUNK_SIZE || z < 0 || z >= CHUNK_SIZE || y < 0 || y >= CHUNK_HEIGHT) return false;
 	return m_Blocks[GetBlockIndex(x, y, z)];
 }
 
@@ -184,99 +141,99 @@ void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 {
 	std::array<Vertex, 6> frontFace = {
 		Vertex{
-			glm::i8vec3(-1, -1, -1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(0, 0, 0),
+			0,
 			0
 		},
 		Vertex{
-			glm::i8vec3(1, -1, -1),
-			glm::u8vec2(1, 0),
+			glm::i8vec3(1, 0, 0),
+			1,
 			0
 		},
 		Vertex{
-			glm::i8vec3(1, 1, -1),
-			glm::u8vec2(1, 1),
+			glm::i8vec3(1, 1, 0),
+			3,
 			0
 		},
 		Vertex{
-			glm::i8vec3(1, 1, -1),
-			glm::u8vec2(1, 1),
+			glm::i8vec3(1, 1, 0),
+			3,
 			0
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(0, 1, 0),
+			2,
 			0
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, -1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(0, 0, 0),
+			0,
 			0
 		}
 	};
 
 	std::array<Vertex, 6> backFace = {
 		Vertex{
-			glm::i8vec3(-1, -1,  1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(0, 0,  1),
+			0,
 			1
 		},
 		Vertex{
-			glm::i8vec3(1, -1, 1),
-			glm::u8vec2(1, 0),
-			1
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 1),
-			glm::u8vec2(1, 1),
+			glm::i8vec3(1, 0, 1),
+			1,
 			1
 		},
 		Vertex{
 			glm::i8vec3(1, 1, 1),
-			glm::u8vec2(1, 1),
+			3,
 			1
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, 1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(1, 1, 1),
+			3,
 			1
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, 1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(0, 1, 1),
+			2,
+			1
+		},
+		Vertex{
+			glm::i8vec3(0, 0, 1),
+			0,
 			1
 		}
 	};
 
 	std::array<Vertex, 6> leftFace = {
 		Vertex{
-			glm::i8vec3(-1,  1,  1),
-			glm::u8vec2(1, 0),
+			glm::i8vec3(0,  1,  1),
+			1,
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, -1),
-			glm::u8vec2(1, 1),
+			glm::i8vec3(0, 1, 0),
+			3,
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(0, 0, 0),
+			2,
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(0, 0, 0),
+			2,
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, 1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(0, 0, 1),
+			0,
 			2
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, 1),
-			glm::u8vec2(1, 0),
+			glm::i8vec3(0, 1, 1),
+			1,
 			2
 		}
 	};
@@ -284,98 +241,98 @@ void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 	std::array<Vertex, 6> rightFace = {
 		Vertex{
 			glm::i8vec3(1,  1,  1),
-			glm::u8vec2(1, 0),
+			1,
 			3
 		},
 		Vertex{
-			glm::i8vec3(1, 1, -1),
-			glm::u8vec2(1, 1),
+			glm::i8vec3(1, 1, 0),
+			3,
 			3
 		},
 		Vertex{
-			glm::i8vec3(1, -1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(1, 0, 0),
+			2,
 			3
 		},
 		Vertex{
-			glm::i8vec3(1, -1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(1, 0, 0),
+			2,
 			3
 		},
 		Vertex{
-			glm::i8vec3(1, -1, 1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(1, 0, 1),
+			0,
 			3
 		},
 		Vertex{
 			glm::i8vec3(1, 1, 1),
-			glm::u8vec2(1, 0),
+			1,
 			3
 		}
 	};
 
 	std::array<Vertex, 6> bottomFace = {
 		Vertex{
-			glm::i8vec3(-1,  -1,  -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(0,  0,  0),
+			2,
 			4
 		},
 		Vertex{
-			glm::i8vec3(1, -1, -1),
-			glm::u8vec2(1, 1),
+			glm::i8vec3(1, 0, 0),
+			3,
 			4
 		},
 		Vertex{
-			glm::i8vec3(1, -1, 1),
-			glm::u8vec2(1, 0),
+			glm::i8vec3(1, 0, 1),
+			1,
 			4
 		},
 		Vertex{
-			glm::i8vec3(1, -1, 1),
-			glm::u8vec2(1, 0),
+			glm::i8vec3(1, 0, 1),
+			1,
 			4
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, 1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(0, 0, 1),
+			0,
 			4
 		},
 		Vertex{
-			glm::i8vec3(-1, -1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(0, 0, 0),
+			2,
 			4
 		}
 	};
 
 	std::array<Vertex, 6> topFace = {
 		Vertex{
-			glm::i8vec3(-1,  1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(0,  1, 0),
+			2,
 			9
 		},
 		Vertex{
-			glm::i8vec3(1, 1, -1),
-			glm::u8vec2(1, 1),
-			9
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 1),
-			glm::u8vec2(1, 0),
+			glm::i8vec3(1, 1, 0),
+			3,
 			9
 		},
 		Vertex{
 			glm::i8vec3(1, 1, 1),
-			glm::u8vec2(1, 0),
+			1,
 			9
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, 1),
-			glm::u8vec2(0, 0),
+			glm::i8vec3(1, 1, 1),
+			1,
 			9
 		},
 		Vertex{
-			glm::i8vec3(-1, 1, -1),
-			glm::u8vec2(0, 1),
+			glm::i8vec3(0, 1, 1),
+			0,
+			9
+		},
+		Vertex{
+			glm::i8vec3(0, 1, 0),
+			2,
 			9
 		}
 	};
@@ -410,7 +367,7 @@ void Chunk::AddFace(const std::array<Vertex, 6> &blockFace, const glm::ivec3 &fa
 					(static_cast<int8_t>(facePos.y) + vert.position.y),
 					(static_cast<int8_t>(facePos.z) + vert.position.z),
 				},
-				vert.uv,
+				vert.uvIndex,
 				vert.normalIndex
 			}
 		);

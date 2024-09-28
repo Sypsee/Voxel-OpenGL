@@ -20,6 +20,7 @@ public:
 
 private:
 	std::unordered_map<glm::ivec2, Chunk> chunks;
+	//std::vector<std::unordered_map<glm::ivec2, Chunk>::iterator> deleteChunks;
 
 	FastNoiseLite noise;
 	int seed = rand();

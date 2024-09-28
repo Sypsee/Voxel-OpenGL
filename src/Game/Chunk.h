@@ -12,13 +12,13 @@
 #include "ObjectComponents.h"
 #include "FrustumCulling.h"
 
-#define CHUNK_SIZE 16
+#define CHUNK_SIZE 32
 #define CHUNK_HEIGHT 256
 
 struct Vertex
 {
 	glm::i8vec3 position;
-	glm::u8vec2 uv;
+	uint8_t uvIndex;
 	uint8_t normalIndex;
 };
 
