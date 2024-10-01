@@ -9,14 +9,6 @@ World::World()
 	noise.SetFractalLacunarity(1.75f);
 	noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	noise.SetFractalType(FastNoiseLite::FractalType_FBm);
-
-	/*for (int16_t x = -chunkDiameter; x <= chunkDiameter; x += CHUNK_SIZE)
-	{
-		for (int16_t z = -chunkDiameter; z <= chunkDiameter; z += CHUNK_SIZE)
-		{
-			chunks[{x, z}].GenerateChunkT({ x,z }, noise);
-		}
-	}*/
 }
 
 bool World::GetBlock(const int x, const int y, const int z)
@@ -36,12 +28,6 @@ bool World::GetBlock(const int x, const int y, const int z)
 
 void World::Draw(const Camera& cam)
 {
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - previousTime).count();
-	previousTime = currentTime;
-
-	std::cout << elapsedTime << "ms\n";
-
 	fc.Update(cam);
 
 	// Chunk Loading
@@ -65,11 +51,6 @@ void World::Draw(const Camera& cam)
 
 				if (x != minX && x != maxX - 1 && z != minZ && z != maxZ - 1 && !chunks[{chunkXPos, chunkZPos}].isChunkLoaded)
 				{
-					//chunks[{chunkXPos, chunkZPos}].cXN = chunkXPos > 0 ? &chunks[{chunkXPos - 1, chunkZPos}] : nullptr;
-					//chunks[{chunkXPos, chunkZPos}].cXP = chunkXPos < CHUNK_SIZE ? &chunks[{chunkXPos + 1, chunkZPos}] : nullptr;
-					//chunks[{chunkXPos, chunkZPos}].cZN = chunkZPos > 0 ? &chunks[{chunkXPos, chunkZPos - 1}] : nullptr;
-					//chunks[{chunkXPos, chunkZPos}].cZP = chunkZPos < CHUNK_SIZE ? &chunks[{chunkXPos, chunkZPos + 1}] : nullptr;
-
 					chunks[{chunkXPos, chunkZPos}].GenerateChunkT({ chunkXPos, chunkZPos }, noise);
 					isChunkLoaded = chunks[{chunkXPos, chunkZPos}].isChunkLoaded;
 				}

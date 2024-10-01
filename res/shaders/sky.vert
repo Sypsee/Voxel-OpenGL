@@ -1,19 +1,15 @@
 #version 450 core
 
-layout(location = 0) in vec3 aPosition;
-layout(location = 2) in vec2 aUv;
+layout(location = 0) in vec3 aPos;
 
-out vec2 uv;
-out vec3 FragPos;
+uniform mat4 inverseView;
 
-uniform mat4 proj;
-uniform mat4 view;
-uniform mat4 model;
+out vec3 viewDir;
 
 void main()
 {
-	uv = aUv;
-	FragPos = vec3(model * vec4(aPosition, 1.0));
+	vec4 end = inverseView * vec4(aPos.xy, 1.0, 1.0);
+	viewDir = normalize(end.xyz / end.w);
 
-	gl_Position = proj * view * model * vec4(aPosition, 1.0);
+	gl_Position = vec4(aPos, 1.0);
 }

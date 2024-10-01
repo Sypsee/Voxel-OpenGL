@@ -22,6 +22,8 @@ Cloud::Cloud()
 Cloud::~Cloud()
 {
 	glDeleteBuffers(1, &m_VAO);
+	delete m_Shader;
+	delete m_VBO;
 }
 
 void Cloud::Draw(glm::vec3 viewPos)

@@ -161,6 +161,7 @@
     <ClCompile Include="src\Core\Window.cpp" />
     <ClCompile Include="src\Game\Chunk.cpp" />
     <ClCompile Include="src\Game\Clouds.cpp" />
+    <ClCompile Include="src\Game\Sky.cpp" />
     <ClCompile Include="src\Game\World.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="src\Game\Frustum.h" />
     <ClInclude Include="src\Game\FrustumCulling.h" />
     <ClInclude Include="src\Game\ObjectComponents.h" />
+    <ClInclude Include="src\Game\Sky.h" />
     <ClInclude Include="src\Game\World.h" />
     <ClInclude Include="src\OpenGL\Shader.h" />
     <ClInclude Include="src\OpenGL\Texture.h" />

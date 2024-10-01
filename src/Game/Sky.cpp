@@ -2,54 +2,43 @@
 
 Sky::Sky()
 {
-	m_Shader.AttachShader({"res/shaders/sky.frag", GL_FRAGMENT_SHADER});
-	m_Shader.AttachShader({"res/shaders/sky.vert", GL_VERTEX_SHADER});
+	//transform.model = glm::scale(transform.model, { 10.f, 10.f, 10.f });
+
+	m_Shader.AttachShader({ "res/shaders/sky.frag", GL_FRAGMENT_SHADER });
+	m_Shader.AttachShader({ "res/shaders/sky.vert", GL_VERTEX_SHADER });
 
 	glGenVertexArrays(1, &m_VAO);
 	glBindVertexArray(m_VAO);
 
-	m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
+	m_VBO.UploadData(vertices, sizeof(vertices));
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 }
 
 Sky::~Sky()
 {
 	glDeleteBuffers(1, &m_VAO);
-
-	m_Vertices.clear();
 	m_Shader.DestroyShader();
 	m_VBO.DestroyBuffer();
 }
 
-void Sky::CreateHemisphere(int numRows, int numCols, float radius)
-{
-	int numVerticesTopStrip = 3 * numCols;
-	int numVerticesRegularStrip = 6 * numCols;
-
-	m_Vertices.reserve(numVerticesTopStrip + (numRows - 1) * numVerticesRegularStrip);
-
-	float pitchAngle = 90.f / (float)numRows;
-	float headingAngle = 360.f / (float)numCols;
-
-	glm::vec3 apex(0.f, radius, 0.f);
-
-	float pitch = -90.f;
-
-	for (float heading = 0.0f; heading < 360.f; heading += headingAngle)
-	{
-	}
-}
-
-void Sky::Draw(glm::vec3 viewPos)
+void Sky::Draw()
 {
 	m_Shader.Bind();
-	m_Shader.setMat4("proj", transform.proj);
-	m_Shader.setMat4("view", transform.view);
-	m_Shader.setMat4("model", transform.model);
-	m_Shader.setVec3("viewPos", viewPos);
+	glm::mat4 view = glm::inverse(transform.view);
+	view[3] = glm::vec4(0.f, 0.f, 0.f, 1.f);
 
+	float normalizedTime = static_cast<float>(fmod(glfwGetTime(), 10)) / 10;
+	m_Shader.setF("time", normalizedTime/50);
+	m_Shader.setMat4("inverseView", view * glm::inverse(transform.proj));
+	//m_Shader.setMat4("model", transform.model);
+
+	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(m_VAO);
-	glDrawArrays(GL_TRIANGLES, 0, m_Vertices.size());
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
+	glEnable(GL_DEPTH_TEST);
 
 	m_Shader.UnBind();
 }

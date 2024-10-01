@@ -4,7 +4,7 @@
 
 int32_t FloatToIntNoise(float val)
 {
-	return static_cast<int32_t>(((val + 1) / 2) * 90);
+	return static_cast<int32_t>(((val + 1) / 2) * 55);
 }
 
 Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
@@ -30,6 +30,87 @@ Chunk::Chunk(glm::ivec2 position, FastNoiseLite noise, bool shouldBuild)
 Chunk::~Chunk()
 {
 	CleanChunk();
+}
+
+const uint32_t Chunk::PackVertexData(int8_t x, int8_t y, int8_t z, uint8_t colorIndex, uint8_t normalIndex, uint8_t ambientLevel) const {
+	uint32_t packedData = 0;
+	packedData |= (static_cast<uint32_t>(x) & POSITION_X_MASK);
+	packedData |= ((static_cast<uint32_t>(y) & POSITION_Y_MASK) << 5);
+	packedData |= ((static_cast<uint32_t>(z) & POSITION_Z_MASK) << 13);
+	packedData |= ((static_cast<uint32_t>(colorIndex) & COLOR_INDEX_MASK) << 18);
+	packedData |= ((static_cast<uint32_t>(normalIndex) & NORMAL_INDEX_MASK) << 21);
+	packedData |= ((static_cast<uint32_t>(ambientLevel) & AMBIENT_LEVEL_MASK) << 24);
+	return packedData;
+}
+
+void Chunk::UnpackVertexData(uint32_t packedData, int8_t& x, int8_t& y, int8_t& z, uint8_t& colorIndex, uint8_t& normalIndex, uint8_t& ambientLevel) {
+	x = packedData & POSITION_X_MASK;
+	y = (packedData >> 5) & POSITION_Y_MASK;
+	z = (packedData >> 13) & POSITION_Z_MASK;
+	colorIndex = (packedData >> 18) & COLOR_INDEX_MASK;
+	normalIndex = (packedData >> 21) & NORMAL_INDEX_MASK;
+	ambientLevel = (packedData >> 24) & AMBIENT_LEVEL_MASK;
+}
+
+const std::array<uint8_t, 4> Chunk::AddAO(uint8_t normalIndex, glm::ivec3 facePos) const
+{
+	std::array<uint8_t, 4> ao = { 0,0,0 };
+
+	if (normalIndex == 4 || normalIndex == 5)	// Top & Bottom Face
+	{
+		bool a = GetBlock(facePos.x, facePos.y, facePos.z - 1);
+		bool b = GetBlock(facePos.x - 1, facePos.y, facePos.z - 1);
+		bool c = GetBlock(facePos.x - 1, facePos.y, facePos.z);
+		bool d = GetBlock(facePos.x - 1, facePos.y, facePos.z + 1);
+		bool e = GetBlock(facePos.x, facePos.y, facePos.z + 1);
+		bool f = GetBlock(facePos.x + 1, facePos.y, facePos.z + 1);
+		bool g = GetBlock(facePos.x + 1, facePos.y, facePos.z);
+		bool h = GetBlock(facePos.x + 1, facePos.y, facePos.z - 1);
+
+		ao[0] = a + b + c;
+		ao[1] = g + h + a;
+		ao[2] = e + f + g;
+		ao[3] = c + d + e;
+	}
+	else if (normalIndex == 2 || normalIndex == 3)	// Right & Left Face
+	{
+		bool a = GetBlock(facePos.x, facePos.y, facePos.z - 1);
+		bool b = GetBlock(facePos.x, facePos.y - 1, facePos.z - 1);
+		bool c = GetBlock(facePos.x, facePos.y - 1, facePos.z);
+		bool d = GetBlock(facePos.x, facePos.y - 1, facePos.z + 1);
+		bool e = GetBlock(facePos.x, facePos.y, facePos.z + 1);
+		bool f = GetBlock(facePos.x, facePos.y + 1, facePos.z + 1);
+		bool g = GetBlock(facePos.x, facePos.y + 1, facePos.z);
+		bool h = GetBlock(facePos.x, facePos.y + 1, facePos.z - 1);
+
+		ao[0] = a + b + c;
+		ao[1] = g + h + a;
+		ao[2] = e + f + g;
+		ao[3] = c + d + e;
+	}
+	else // Front & Back Face
+	{
+		bool a = GetBlock(facePos.x - 1, facePos.y, facePos.z);
+		bool b = GetBlock(facePos.x - 1, facePos.y - 1, facePos.z);
+		bool c = GetBlock(facePos.x, facePos.y - 1, facePos.z);
+		bool d = GetBlock(facePos.x + 1, facePos.y - 1, facePos.z);
+		bool e = GetBlock(facePos.x + 1, facePos.y, facePos.z);
+		bool f = GetBlock(facePos.x + 1, facePos.y + 1, facePos.z);
+		bool g = GetBlock(facePos.x - 1, facePos.y + 1, facePos.z);
+		bool h = GetBlock(facePos.x - 1, facePos.y + 1, facePos.z);
+
+		ao[0] = a + b + c;
+		ao[1] = g + h + a;
+		ao[2] = e + f + g;
+		ao[3] = c + d + e;
+	}
+
+	ao[0] = std::min(ao[0], (uint8_t)3);
+	ao[1] = std::min(ao[1], (uint8_t)3);
+	ao[2] = std::min(ao[2], (uint8_t)3);
+	ao[3] = std::min(ao[3], (uint8_t)3);
+
+	return ao;
 }
 
 void Chunk::CleanChunk()
@@ -59,8 +140,8 @@ void Chunk::GenerateChunkT(glm::ivec2 position, FastNoiseLite& noise)
 		m_ChunkThread.join();
 	}
 
-	m_ChunkThread = std::thread(&Chunk::BuildChunk, this);
-	//BuildChunk();
+	//m_ChunkThread = std::thread(&Chunk::BuildChunk, this);
+	BuildChunk();
 }
 
 void Chunk::BuildChunk()
@@ -71,11 +152,13 @@ void Chunk::BuildChunk()
 		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
 			float noiseY = (transform.position.z + static_cast<float>(z));
-			float noiseValue = m_Noise.GetNoise(noiseX, noiseY);
 
-			int32_t height = FloatToIntNoise(noiseValue);
-			for (int32_t y = 0; y < height; y++)
+			for (int32_t y = 0; y < CHUNK_HEIGHT; y++)
 			{
+				float noiseValue = m_Noise.GetNoise(noiseX, (float)y, noiseY);
+				int32_t height = FloatToIntNoise(noiseValue);
+				if (height < y) continue;
+
 				if (OutOfBounds(x, y, z)) break;
 				m_Blocks[GetBlockIndex(x, y, z)] = true;
 			}
@@ -88,11 +171,13 @@ void Chunk::BuildChunk()
 		for (int32_t z = 0; z < CHUNK_SIZE; z++)
 		{
 			float noiseY = (transform.position.z + static_cast<float>(z));
-			float noiseValue = m_Noise.GetNoise(noiseX, noiseY);
 
-			int32_t height = FloatToIntNoise(noiseValue);
-			for (int32_t y = 0; y < height; y++)
+			for (int32_t y = 0; y < CHUNK_HEIGHT; y++)
 			{
+				float noiseValue = m_Noise.GetNoise(noiseX, (float)y, noiseY);
+				int32_t height = FloatToIntNoise(noiseValue);
+				if (height < y) continue;
+
 				if (OutOfBounds(x, y, z)) break;
 				AddBlock(x, y, z);
 			}
@@ -126,203 +211,63 @@ bool Chunk::OutOfBounds(const int value, const int max)
 
 void Chunk::AddBlock(const int32_t x, const int y, const int32_t z)
 {
-	std::array<Vertex, 6> frontFace = {
-		Vertex{
-			glm::i8vec3(0, 0, 0),
-			0,
-			0
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 0),
-			1,
-			0
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 0),
-			3,
-			0
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 0),
-			3,
-			0
-		},
-		Vertex{
-			glm::i8vec3(0, 1, 0),
-			2,
-			0
-		},
-		Vertex{
-			glm::i8vec3(0, 0, 0),
-			0,
-			0
-		}
+	srand(GetBlockIndex(x, y, z));
+	uint8_t randomColorIndex = rand() % 5;
+
+	const std::array<Vertex, 6> frontFace = {
+		Vertex{ PackVertexData(0, 0, 0, randomColorIndex, 0, 0) },
+		Vertex{ PackVertexData(1, 0, 0, randomColorIndex, 0, 0) },
+		Vertex{ PackVertexData(1, 1, 0, randomColorIndex, 0, 0) },
+		Vertex{ PackVertexData(1, 1, 0, randomColorIndex, 0, 0) },
+		Vertex{ PackVertexData(0, 1, 0, randomColorIndex, 0, 0) },
+		Vertex{ PackVertexData(0, 0, 0, randomColorIndex, 0, 0) }
 	};
 
-	std::array<Vertex, 6> backFace = {
-		Vertex{
-			glm::i8vec3(0, 0,  1),
-			0,
-			1
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 1),
-			1,
-			1
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 1),
-			3,
-			1
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 1),
-			3,
-			1
-		},
-		Vertex{
-			glm::i8vec3(0, 1, 1),
-			2,
-			1
-		},
-		Vertex{
-			glm::i8vec3(0, 0, 1),
-			0,
-			1
-		}
+	const std::array<Vertex, 6> backFace = {
+		Vertex{ PackVertexData(0, 0, 1, randomColorIndex, 1, 0) },
+		Vertex{ PackVertexData(1, 0, 1, randomColorIndex, 1, 0) },
+		Vertex{ PackVertexData(1, 1, 1, randomColorIndex, 1, 0) },
+		Vertex{ PackVertexData(1, 1, 1, randomColorIndex, 1, 0) },
+		Vertex{ PackVertexData(0, 1, 1, randomColorIndex, 1, 0) },
+		Vertex{ PackVertexData(0, 0, 1, randomColorIndex, 1, 0) }
 	};
 
-	std::array<Vertex, 6> leftFace = {
-		Vertex{
-			glm::i8vec3(0,  1,  1),
-			1,
-			2
-		},
-		Vertex{
-			glm::i8vec3(0, 1, 0),
-			3,
-			2
-		},
-		Vertex{
-			glm::i8vec3(0, 0, 0),
-			2,
-			2
-		},
-		Vertex{
-			glm::i8vec3(0, 0, 0),
-			2,
-			2
-		},
-		Vertex{
-			glm::i8vec3(0, 0, 1),
-			0,
-			2
-		},
-		Vertex{
-			glm::i8vec3(0, 1, 1),
-			1,
-			2
-		}
+	const std::array<Vertex, 6> leftFace = {
+		Vertex{ PackVertexData(0, 1, 1, randomColorIndex, 2, 0) },
+		Vertex{ PackVertexData(0, 1, 0, randomColorIndex, 2, 0) },
+		Vertex{ PackVertexData(0, 0, 0, randomColorIndex, 2, 0) },
+		Vertex{ PackVertexData(0, 0, 0, randomColorIndex, 2, 0) },
+		Vertex{ PackVertexData(0, 0, 1, randomColorIndex, 2, 0) },
+		Vertex{ PackVertexData(0, 1, 1, randomColorIndex, 2, 0) }
 	};
 
-	std::array<Vertex, 6> rightFace = {
-		Vertex{
-			glm::i8vec3(1,  1,  1),
-			1,
-			3
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 0),
-			3,
-			3
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 0),
-			2,
-			3
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 0),
-			2,
-			3
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 1),
-			0,
-			3
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 1),
-			1,
-			3
-		}
+	const std::array<Vertex, 6> rightFace = {
+		Vertex{ PackVertexData(1, 1, 1, randomColorIndex, 3, 0) },
+		Vertex{ PackVertexData(1, 1, 0, randomColorIndex, 3, 0) },
+		Vertex{ PackVertexData(1, 0, 0, randomColorIndex, 3, 0) },
+		Vertex{ PackVertexData(1, 0, 0, randomColorIndex, 3, 0) },
+		Vertex{ PackVertexData(1, 0, 1, randomColorIndex, 3, 0) },
+		Vertex{ PackVertexData(1, 1, 1, randomColorIndex, 3, 0) }
 	};
 
-	std::array<Vertex, 6> bottomFace = {
-		Vertex{
-			glm::i8vec3(0,  0,  0),
-			2,
-			4
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 0),
-			3,
-			4
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 1),
-			1,
-			4
-		},
-		Vertex{
-			glm::i8vec3(1, 0, 1),
-			1,
-			4
-		},
-		Vertex{
-			glm::i8vec3(0, 0, 1),
-			0,
-			4
-		},
-		Vertex{
-			glm::i8vec3(0, 0, 0),
-			2,
-			4
-		}
+	const std::array<Vertex, 6> bottomFace = {
+		Vertex{ PackVertexData(0, 0, 0, randomColorIndex, 4, 0) },
+		Vertex{ PackVertexData(1, 0, 0, randomColorIndex, 4, 0) },
+		Vertex{ PackVertexData(1, 0, 1, randomColorIndex, 4, 0) },
+		Vertex{ PackVertexData(1, 0, 1, randomColorIndex, 4, 0) },
+		Vertex{ PackVertexData(0, 0, 1, randomColorIndex, 4, 0) },
+		Vertex{ PackVertexData(0, 0, 0, randomColorIndex, 4, 0) }
 	};
 
-	std::array<Vertex, 6> topFace = {
-		Vertex{
-			glm::i8vec3(0,  1, 0),
-			2,
-			9
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 0),
-			3,
-			9
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 1),
-			1,
-			9
-		},
-		Vertex{
-			glm::i8vec3(1, 1, 1),
-			1,
-			9
-		},
-		Vertex{
-			glm::i8vec3(0, 1, 1),
-			0,
-			9
-		},
-		Vertex{
-			glm::i8vec3(0, 1, 0),
-			2,
-			9
-		}
+	const std::array<Vertex, 6> topFace = {
+		Vertex{ PackVertexData(0, 1, 0, randomColorIndex, 5, 0) },
+		Vertex{ PackVertexData(1, 1, 0, randomColorIndex, 5, 0) },
+		Vertex{ PackVertexData(1, 1, 1, randomColorIndex, 5, 0) },
+		Vertex{ PackVertexData(1, 1, 1, randomColorIndex, 5, 0) },
+		Vertex{ PackVertexData(0, 1, 1, randomColorIndex, 5, 0) },
+		Vertex{ PackVertexData(0, 1, 0, randomColorIndex, 5, 0) }
 	};
+
 
 	glm::ivec3 facePos = { x,y,z };
 	TryAddFace(frontFace, facePos, { x, y, z - 1 });
@@ -339,23 +284,6 @@ void Chunk::TryAddFace(const std::array<Vertex, 6>& blockFace, const glm::ivec3&
 	if (OutOfBounds(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z) ||
 		!m_Blocks[GetBlockIndex(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)])
 	{
-		/*if (cXN != nullptr)
-		{
-			if (cXN->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
-		}
-		if (cXP != nullptr)
-		{
-			if (cXP->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
-		}
-		if (cZN != nullptr)
-		{
-			if (cZN->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
-		}
-		if (cZP != nullptr)
-		{
-			if (cZP->GetBlock(adjacentBlock.x, adjacentBlock.y, adjacentBlock.z)) return;
-		}*/
-
 		AddFace(blockFace, facePos);
 	}
 }
@@ -365,16 +293,48 @@ void Chunk::AddFace(const std::array<Vertex, 6> &blockFace, const glm::ivec3 &fa
 	try {
 		std::lock_guard<std::mutex> lock(mtx);
 
-		for (const Vertex& vert : blockFace) {
-			m_Vertices.push_back(
+		// Repack vertex data and add ambient + convert [local pos -> world pos]
+		for (int i=0; i<blockFace.size(); i++)
+		{
+			const Vertex vert = blockFace[i];
+
+			int8_t x = 0;
+			int8_t y = 0;
+			int8_t z = 0;
+			uint8_t colorIndex = 0;
+			uint8_t normalIndex = 0;
+			uint8_t ambientLevel = 0;
+
+			UnpackVertexData(vert.packedData, x, y, z, colorIndex, normalIndex, ambientLevel);
+
+			std::array<uint8_t, 4> ao = AddAO(normalIndex, facePos);
+
+			if (i == 0 || i == 5)
+			{
+				ambientLevel = ao[0];
+			}
+			else if (i == 1)
+			{
+				ambientLevel = ao[1];
+			}
+			else if (i == 2 || i == 3)
+			{
+				ambientLevel = ao[2];
+			}
+			else if (i == 4)
+			{
+				ambientLevel = ao[3];
+			}
+
+			m_Vertices.emplace_back(
 				Vertex{
-					{
-						static_cast<int8_t>(facePos.x) + vert.position.x,
-						static_cast<int8_t>(facePos.y) + vert.position.y,
-						static_cast<int8_t>(facePos.z) + vert.position.z,
-					},
-					vert.uvIndex,
-					vert.normalIndex
+					PackVertexData(static_cast<int8_t>(facePos.x) + x,
+						static_cast<int8_t>(facePos.y) + y,
+						static_cast<int8_t>(facePos.z) + z,
+						colorIndex,
+						normalIndex,
+						ambientLevel
+					)
 				}
 			);
 		}
@@ -394,12 +354,8 @@ void Chunk::Draw()
 
 		m_VBO.UploadData(&m_Vertices[0], m_Vertices.size() * sizeof(Vertex));
 
-		glVertexAttribIPointer(0, 3, GL_BYTE, sizeof(Vertex), (void*)0);
+		glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, Vertex::packedData));
 		glEnableVertexAttribArray(0);
-		glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::uvIndex)));
-		glEnableVertexAttribArray(1);
-		glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::normalIndex)));
-		glEnableVertexAttribArray(2);
 
 		generateGLData = false;
 	}
@@ -409,6 +365,9 @@ void Chunk::Draw()
 	m_Shader.setMat4("view", transform.view);
 	m_Shader.setMat4("proj", transform.proj);
 	m_Shader.setVec3("viewPos", transform.camPos);
+
+	float normalizedTime = static_cast<float>(fmod(glfwGetTime(), 10)) / 10;
+	m_Shader.setF("time", normalizedTime/50);
 
 	glBindVertexArray(m_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, m_Vertices.size());

@@ -26,10 +26,8 @@ private:
 	int seed = rand();
 
 	const int16_t chunkDiameter = 1;
-	const int8_t m_RenderDistance = 12;
+	const int8_t m_RenderDistance = 6;
 	int8_t m_LoadDistance = 2;
 
 	FrustumCulling fc;
-
-	std::chrono::time_point<std::chrono::high_resolution_clock> previousTime;
 };

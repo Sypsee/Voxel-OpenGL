@@ -70,10 +70,11 @@ Application::Application()
 	glEnable(GL_BLEND);
 	//glEnable(GL_CULL_FACE);
 	//glCullFace(GL_FRONT);
-	/*glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(message_callback, nullptr);*/
+	//glEnable(GL_DEBUG_OUTPUT);
+	//glDebugMessageCallback(message_callback, nullptr);
 
 	world = new World();
+	sky = new Sky();
 	cam.setPosition({ 0, 50, 0 });
 	//cloud = new Cloud();
 }
@@ -81,7 +82,7 @@ Application::Application()
 Application::~Application()
 {
 	delete world;
-	delete cloud;
+	//delete cloud;
 }
 
 void Application::run()
@@ -114,6 +115,11 @@ void Application::run()
 		//std::cout << dt*1000 << "ms\n";
 
 		cam.update(m_Window.getGLFWwindow());
+
+		sky->transform.proj = cam.getProjMatrix();
+		sky->transform.view = cam.getViewMatrix();
+		sky->Draw();
+
 		world->Draw(cam);
 
 		/*cloud->transform.proj = cam.getProjMatrix();

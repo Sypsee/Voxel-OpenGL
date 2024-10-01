@@ -5,6 +5,7 @@
 #include "Renderer.h"
 #include "../Game/World.h"
 #include "../Game/Clouds.h"
+#include "../Game/Sky.h"
 
 #include <unordered_map>
 #include <array>
@@ -27,5 +28,6 @@ private:
 	Window m_Window{ "Voxel Engine", START_WIDTH, START_HEIGHT };
 	Renderer renderer{};
 	World *world;
-	Cloud* cloud;
+	Sky *sky;
+	//Cloud* cloud;
 };
